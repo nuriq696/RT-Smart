@@ -281,8 +281,12 @@
             { id: "S1", tanggal: "2026-06-03", noRumah: "A-01", pemohon: "Budi Santoso", jenisSurat: "Laporan", keperluan: "Lampu jalan di depan rumah A-01 mati sejak 3 hari yang lalu. Mohon segera diperbaiki.", status: "Menunggu" }
         ];
         let dbSlider = [
-            { id: "SL1", url: "https://images.unsplash.com/photo-1449844908441-8829872d2607?q=80&w=1200&auto=format&fit=crop", filename: "lingkungan.jpg" },
-            { id: "SL2", url: "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=1200&auto=format&fit=crop", filename: "rapat.jpg" }
+            { id: "SL1", url: "https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?q=80&w=1200&auto=format&fit=crop", filename: "bromo.jpg", pitutur: "Urip Iku Urup", arti: "Hidup itu nyala, hendaknya kita senantiasa memberi manfaat bagi orang lain di sekitar kita." },
+            { id: "SL2", url: "https://images.unsplash.com/photo-1559628233-eb1b1a45564b?q=80&w=1200&auto=format&fit=crop", filename: "sawah.jpg", pitutur: "Memayu Hayuning Bawana", arti: "Manusia hidup harus mengusahakan keselamatan, kebahagiaan, dan kesejahteraan alam semesta." },
+            { id: "SL3", url: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1200&auto=format&fit=crop", filename: "desa.jpg", pitutur: "Sura Dira Jayaningrat, Lebur Dening Pangastuti", arti: "Segala sifat keras hati, picik, angkara murka, hanya bisa dikalahkan dengan sikap bijak, lembut, dan sabar." },
+            { id: "SL4", url: "https://images.unsplash.com/photo-1470071131384-001b85755b36?q=80&w=1200&auto=format&fit=crop", filename: "hutan.jpg", pitutur: "Ngluruk Tanpa Bala, Menang Tanpa Ngasorake", arti: "Berjuang tanpa perlu membawa massa, menang tanpa harus merendahkan dan mempermalukan lawan." },
+            { id: "SL5", url: "https://images.unsplash.com/photo-1531053270062-8700ef074697?q=80&w=1200&auto=format&fit=crop", filename: "danau.jpg", pitutur: "Datan Serik Lamun Ketaman, Datan Susah Lamun Kelangan", arti: "Jangan gampang sakit hati manakala tertimpa musibah, jangan bersedih manakala kehilangan sesuatu." },
+            { id: "SL6", url: "https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96?q=80&w=1200&auto=format&fit=crop", filename: "pagi.jpg", pitutur: "Aja Adigang, Adigung, Adiguna", arti: "Jangan menyombongkan kekuatan, kekuasaan, dan kepintaran yang saat ini kita miliki." }
         ];
         let dbPinjaman = [
             { id: "PJ1", tanggal: "2026-06-01", namaPeminjam: "Budi Santoso", noRumah: "A-01", jenis: "Pinjaman", nominal: 1000000, keterangan: "Modal usaha" },
@@ -580,19 +584,28 @@
             let html = `
                 <div class="fade-in pb-8 font-sans">
                     <!-- SLIDER GAMBAR DINAMIS -->
-                    <div class="mb-8 relative rounded-2xl overflow-hidden bg-gray-200 h-48 md:h-80 shadow-md group border border-gray-100" id="slider-container">
+                    <div class="mb-8 relative rounded-2xl overflow-hidden bg-gray-900 h-48 md:h-80 shadow-md group border border-gray-100" id="slider-container">
                         <div id="slider-track" class="flex transition-transform duration-700 ease-in-out h-full w-full">
                             ${slides.length === 0 
                                 ? `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-400"><i class="fas fa-images text-4xl mb-2"></i><p>Belum ada gambar slide</p></div>` 
-                                : slides.map(s => `<div class="min-w-full h-full relative flex-shrink-0"><img src="${s.url}" class="w-full h-full object-cover brightness-90"></div>`).join('')
+                                : slides.map(s => `
+                                    <div class="min-w-full h-full relative flex-shrink-0">
+                                        <img src="${s.url}" class="w-full h-full object-cover brightness-75">
+                                        <!-- Teks Dinamis Ikut Bergerak Bersama Gambar -->
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex items-end p-6 md:p-10 pointer-events-none">
+                                            <div class="text-white drop-shadow-xl max-w-3xl">
+                                                ${s.pitutur ? `
+                                                    <h2 class="text-xl md:text-3xl font-bold mb-2 font-serif text-amber-400 italic tracking-wide">"${s.pitutur}"</h2>
+                                                    <p class="text-gray-200 text-xs md:text-sm border-l-4 border-amber-500 pl-3 font-medium opacity-90">${s.arti}</p>
+                                                ` : `
+                                                    <h2 class="text-2xl md:text-3xl font-bold mb-1">Selamat Datang, ${currentUser.nama}!</h2>
+                                                    <p class="text-gray-200 text-sm md:text-base">Sistem Informasi Manajemen RT Smart</p>
+                                                `}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')
                             }
-                        </div>
-                        
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end p-6 pointer-events-none">
-                            <div class="text-white drop-shadow-md">
-                                <h2 class="text-2xl md:text-3xl font-bold mb-1">Selamat Datang, ${currentUser.nama}!</h2>
-                                <p class="text-gray-200 text-sm md:text-base">Sistem Informasi Manajemen RT Smart</p>
-                            </div>
                         </div>
 
                         ${currentUser.role === 'admin' ? `
@@ -834,19 +847,29 @@
 
             let html = `
                 <div class="fade-in font-sans space-y-8">
-                    <!-- SLIDER UNTUK WARGA -->
-                    <div class="relative rounded-2xl overflow-hidden bg-gray-200 h-48 md:h-80 shadow-md group border border-gray-100" id="slider-container">
+                    <!-- SLIDER UNTUK WARGA (PITUTUR JAWA) -->
+                    <div class="relative rounded-2xl overflow-hidden bg-gray-900 h-48 md:h-80 shadow-md group border border-gray-100" id="slider-container">
                         <div id="slider-track" class="flex transition-transform duration-700 ease-in-out h-full w-full">
                             ${slides.length === 0 
                                 ? `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-400"><i class="fas fa-images text-4xl mb-2"></i><p>Belum ada gambar slide</p></div>` 
-                                : slides.map(s => `<div class="min-w-full h-full relative flex-shrink-0"><img src="${s.url}" class="w-full h-full object-cover brightness-90"></div>`).join('')
+                                : slides.map(s => `
+                                    <div class="min-w-full h-full relative flex-shrink-0">
+                                        <img src="${s.url}" class="w-full h-full object-cover brightness-75">
+                                        <!-- Teks Overlay Per Slide -->
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex items-end p-6 md:p-10 pointer-events-none">
+                                            <div class="text-white drop-shadow-xl max-w-3xl">
+                                                ${s.pitutur ? `
+                                                    <h2 class="text-2xl md:text-4xl font-bold mb-2 font-serif text-amber-400 italic tracking-wide">"${s.pitutur}"</h2>
+                                                    <p class="text-gray-200 text-xs md:text-base border-l-4 border-amber-500 pl-3 font-medium opacity-90">${s.arti}</p>
+                                                ` : `
+                                                    <h2 class="text-2xl md:text-3xl font-bold mb-1">Lingkungan RT Smart</h2>
+                                                    <p class="text-gray-200 text-sm md:text-base">Informasi dan Kegiatan Warga</p>
+                                                `}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')
                             }
-                        </div>
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end p-6 pointer-events-none">
-                            <div class="text-white drop-shadow-md">
-                                <h2 class="text-2xl md:text-3xl font-bold mb-1">Lingkungan RT Smart</h2>
-                                <p class="text-gray-200 text-sm md:text-base">Informasi dan Kegiatan Warga</p>
-                            </div>
                         </div>
                     </div>
 
