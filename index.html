@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sistem Informasi Manajemen RT Smart</title>
+    <title>Sistem Informasi Manajemen RT 02 Kuden</title>
     
     <!-- PWA META TAGS -->
     <meta name="theme-color" content="#1e3a8a">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="RT Smart">
+    <meta name="apple-mobile-web-app-title" content="RT 02 Kuden">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2190/2190328.png">
     <link rel="manifest" id="manifest-link">
@@ -58,7 +58,7 @@
                 <div class="w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-2xl mx-auto flex items-center justify-center text-white text-4xl shadow-lg mb-4 transform rotate-3">
                     <i class="fas fa-city -rotate-3"></i>
                 </div>
-                <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">RT Smart</h1>
+                <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">RT 02 Kuden</h1>
                 <p class="text-sm text-gray-500 mt-2 font-medium">Sistem Manajemen Lingkungan Pintar</p>
             </div>
             
@@ -169,7 +169,7 @@
         // KONFIGURASI APLIKASI
         // UBAH IS_PREVIEW KE false JIKA AKAN DI-DEPLOY KE BLOGGER
         const IS_PREVIEW = false; 
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxIZVIlKSAlHaRuZ-6Iz2TDD0BuMk-pKsM5c_DKrQzA9sMAFLbzcca8HXUjcfN5HZwW/exec"; 
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbw4MrlWfqtCMehS9BJJpj2zsZH1cBa6kBwzD7-3kM4H_hGXR5MQ5impm5_JQ19l5kgt/exec"; 
 
         // ==========================================
         // INIT PWA (PROGRESSIVE WEB APP) VIRTUAL
@@ -410,9 +410,9 @@
                                 break;
                             case 'getSlider': res.data = dbSlider; break;
                             case 'addSlide':
-                                // Simulasi ubah base64 ke dummy URL
+                                // Mode Preview lokal: langsung pakai base64
                                 payload.data.id = 'SL' + Date.now();
-                                payload.data.url = payload.data.base64; // Tampilkan base64 langsung di lokal
+                                payload.data.url = payload.data.base64; 
                                 dbSlider.push(payload.data);
                                 break;
                             case 'deleteSlide':
@@ -777,31 +777,49 @@
 
                 const payload = {
                     filename: file.name,
-                    mimeType: 'image/jpeg',
+                    mimeType: 'image/jpeg', // tetap dikirim untuk metadata
                     base64: base64String
                 };
 
                 const res = await fetchApp('addSlide', { data: payload });
                 if (res.success) {
-                    showToast("Gambar berhasil diunggah");
-                    loadMenu('dashboard');
+                    showToast("Gambar berhasil diunggah", "success");
+                    // Muat ulang dashboard tanpa menutup modal agar terlihat hasilnya
+                    await loadMenu(currentUser.role === 'admin' ? 'dashboard' : 'beranda');
+                    document.getElementById('modal-slider').classList.remove('hidden');
                 } else {
                     showToast(res.message, 'error');
                 }
             } catch (err) {
                 showToast("Gagal memproses gambar", 'error');
             }
+            
+            // Kembalikan tombol
+            btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2"></i>Upload';
+            btn.disabled = false;
         }
 
         async function deleteSlide(id) {
+            // Tampilkan loading visual di tombol hapus
+            const btn = event.currentTarget;
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
             showToast("Menghapus gambar...", "info");
+            
             const res = await fetchApp('deleteSlide', { id: id });
+            
             if (res.success) {
-                showToast("Gambar terhapus");
-                await renderDashboard();
+                showToast("Gambar terhapus", "success");
+                // Render ulang dashboard untuk merefresh daftar gambar
+                await loadMenu(currentUser.role === 'admin' ? 'dashboard' : 'beranda');
+                // Buka kembali modal setelah render ulang (karena render ulang menghancurkan DOM lama)
                 document.getElementById('modal-slider').classList.remove('hidden');
             } else {
                 showToast(res.message, 'error');
+                btn.innerHTML = originalIcon;
+                btn.disabled = false;
             }
         }
 
