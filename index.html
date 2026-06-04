@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="RT 02 Smart">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link class="apple-touch-icon" href="https://lh3.googleusercontent.com/d/18uPHgTIR97e_I4IezGl5MdSTCClcrkDl">
+    <link class="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1wKyoV-zibsYTg0ceIBZlVkZnA9ZkuJnE">
     <link rel="manifest" id="manifest-link">
 
     <!-- Tailwind CSS -->
@@ -24,6 +24,9 @@
     <!-- FIREBASE COMPAT SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <!-- SHEETJS (Untuk Fitur Upload Excel) -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
@@ -169,7 +172,7 @@
         const IS_PREVIEW = false; // Ganti jadi false jika ingin terhubung ke Firebase
         
         // JIKA ANDA INGIN MENGGUNAKAN LOGO GAMBAR SENDIRI, MASUKKAN LINK GAMBAR DI BAWAH INI:
-        const LOGIN_LOGO_URL = "https://lh3.googleusercontent.com/d/18uPHgTIR97e_I4IezGl5MdSTCClcrkDl"; // Contoh: "https://domain.com/logo-rt.png" (kosongkan untuk default icon)
+        const LOGIN_LOGO_URL = "https://lh3.googleusercontent.com/d/1wKyoV-zibsYTg0ceIBZlVkZnA9ZkuJnE"; // Contoh: "https://domain.com/logo-rt.png" (kosongkan untuk default icon)
 
         const firebaseConfig = {
             apiKey: "AIzaSyCrz4u4OgmIrDPRWAh1oTGJJPmHBmvTp44",
@@ -260,7 +263,7 @@
                 theme_color: "#1e3a8a",
                 icons: [
                     {
-                        src: "https://lh3.googleusercontent.com/d/18uPHgTIR97e_I4IezGl5MdSTCClcrkDl",
+                        src: "https://lh3.googleusercontent.com/d/1wKyoV-zibsYTg0ceIBZlVkZnA9ZkuJnE",
                         sizes: "512x512",
                         type: "image/png",
                         purpose: "any maskable"
@@ -317,7 +320,7 @@
         function initLoginLogo() {
             const logoContainer = document.getElementById('login-logo-container');
             if (typeof LOGIN_LOGO_URL !== 'undefined' && LOGIN_LOGO_URL) {
-                logoContainer.innerHTML = `<img src="${LOGIN_LOGO_URL}" class="w-full h-full object-contain rounded-2xl -rotate-3 p-2" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2190/2190328.png'">`;
+                logoContainer.innerHTML = `<img src="${LOGIN_LOGO_URL}" class="w-full h-full object-contain rounded-2xl -rotate-3 p-2" onerror="this.src='https://lh3.googleusercontent.com/d/1wKyoV-zibsYTg0ceIBZlVkZnA9ZkuJnE'">`;
                 logoContainer.classList.remove('bg-gradient-to-tr', 'from-blue-600', 'to-indigo-500', 'text-white');
                 logoContainer.classList.add('bg-white');
             }
@@ -749,7 +752,7 @@
                                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-6 md:p-8 pointer-events-none">
                                             <div class="text-white drop-shadow-md">
                                                 <h2 class="text-2xl md:text-3xl font-bold mb-1 font-serif text-amber-400 italic">Selamat Datang, ${currentUser.nama}!</h2>
-                                                <p class="text-gray-200 text-sm md:text-base">Sistem Informasi Manajemen RT Smart</p>
+                                                <p class="text-gray-200 text-sm md:text-base">Sistem Informasi Manajemen RT 02 Smart</p>
                                             </div>
                                         </div>
                                     </div>`).join('')
@@ -854,7 +857,7 @@
                                                     <h2 class="text-xl md:text-3xl font-bold mb-2 font-serif text-amber-400 italic tracking-wide">"${s.pitutur}"</h2>
                                                     <p class="text-gray-200 text-xs md:text-sm border-l-4 border-amber-500 pl-3 font-medium opacity-90">${s.arti}</p>
                                                 ` : `
-                                                    <h2 class="text-2xl md:text-3xl font-bold mb-1">Lingkungan RT Smart</h2>
+                                                    <h2 class="text-2xl md:text-3xl font-bold mb-1">Lingkungan RT 02 Smart</h2>
                                                     <p class="text-gray-200 text-sm md:text-base">Informasi dan Kegiatan Warga</p>
                                                 `}
                                             </div>
@@ -1076,13 +1079,16 @@
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         <div class="p-5 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/50">
                             <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-list text-indigo-500 mr-2"></i>Database Warga</h3>
-                            <div class="flex items-center gap-3 w-full md:w-auto">
-                                <div class="relative flex-1 md:w-64">
+                            <div class="flex items-center gap-3 w-full md:w-auto flex-wrap">
+                                <div class="relative flex-1 md:w-64 min-w-[200px]">
                                     <input type="text" id="search-warga" onkeyup="filterWarga()" placeholder="Cari nama atau NIK..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                                     <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
                                 </div>
                                 ${currentUser.role === 'admin' ? `
-                                <button onclick="openModalTambahWarga()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Tambah</button>
+                                <div class="flex gap-2 w-full md:w-auto justify-end">
+                                    <button onclick="openModalImportWarga()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm transition whitespace-nowrap flex items-center"><i class="fas fa-file-import mr-1.5"></i>Import</button>
+                                    <button onclick="openModalTambahWarga()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm transition whitespace-nowrap flex items-center"><i class="fas fa-plus mr-1.5"></i>Tambah</button>
+                                </div>
                                 ` : ''}
                             </div>
                         </div>
@@ -1168,7 +1174,47 @@
                             </form>
                         </div>
                     </div>
-                </div>` : ''}
+                </div>
+                
+                <!-- MODAL IMPORT WARGA (CSV/EXCEL) -->
+                <div id="modal-import-warga" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col transform transition-all">
+                        <div class="flex justify-between items-center p-5 border-b bg-emerald-50">
+                            <h3 class="text-lg font-bold text-emerald-800"><i class="fas fa-file-excel mr-2"></i>Import Data Massal</h3>
+                            <button onclick="document.getElementById('modal-import-warga').classList.add('hidden')" class="text-emerald-400 hover:text-emerald-700 transition"><i class="fas fa-times text-xl"></i></button>
+                        </div>
+                        
+                        <div class="p-6">
+                            <div class="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-xl mb-5 flex items-start gap-3 shadow-sm text-sm">
+                                <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+                                <div>
+                                    Fitur ini memungkinkan Anda memasukkan puluhan nama warga sekaligus dari file Excel (.xlsx). Sistem otomatis akan membuatkan akses login untuk setiap warga yang dimasukkan.
+                                </div>
+                            </div>
+
+                            <div class="mb-5 border-b border-gray-100 pb-5">
+                                <h4 class="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">1. Unduh Format Template</h4>
+                                <p class="text-xs text-gray-500 mb-3">Gunakan format Excel ini agar sistem bisa membacanya dengan benar.</p>
+                                <button onclick="downloadTemplateWarga()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center shadow-sm">
+                                    <i class="fas fa-download mr-2"></i> Download Template Warga.xlsx
+                                </button>
+                            </div>
+
+                            <form id="form-import-warga" onsubmit="handleImportWarga(event)">
+                                <h4 class="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">2. Upload File Excel Anda</h4>
+                                <input type="file" id="file_import" accept=".xlsx, .xls, .csv" required class="w-full p-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer transition mb-4">
+                                
+                                <div class="pt-2 flex justify-end gap-3">
+                                    <button type="button" onclick="document.getElementById('modal-import-warga').classList.add('hidden')" class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition">Batal</button>
+                                    <button type="submit" id="btn-proses-import" class="flex-1 px-5 py-2.5 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md transition flex items-center justify-center">
+                                        <i class="fas fa-cogs mr-2"></i> Proses Import
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
             `;
             contentArea.innerHTML = html;
         }
@@ -1208,25 +1254,104 @@
             document.getElementById('modal-warga').classList.remove('hidden');
         }
 
-        function editWarga(id) {
-            const w = window.wargaList.find(x => x.id === id);
-            if(!w) return;
-            document.getElementById('w_id').value = w.id;
-            document.getElementById('w_kk').value = w.noKk;
-            document.getElementById('w_nik').value = w.nik;
-            document.getElementById('w_nama').value = w.namaLengkap;
-            document.getElementById('w_rumah').value = w.noRumah;
-            document.getElementById('w_jk').value = w.jenisKelamin;
-            document.getElementById('w_tempatLahir').value = w.tempatLahir;
-            document.getElementById('w_tglLahir').value = w.tanggalLahir ? new Date(w.tanggalLahir).toISOString().split('T')[0] : '';
-            document.getElementById('w_pekerjaan').value = w.pekerjaan || '';
-            document.getElementById('w_status').value = w.statusKeluarga;
-            document.getElementById('w_tinggal').value = w.statusTinggal;
-            document.getElementById('w_hp').value = w.noHp || '';
+        // FUNGSI UNTUK MODAL IMPORT EXCEL
+        function openModalImportWarga() {
+            document.getElementById('form-import-warga').reset();
+            document.getElementById('modal-import-warga').classList.remove('hidden');
+        }
+
+        // Mengunduh File Template Excel (Menggunakan SheetJS)
+        function downloadTemplateWarga() {
+            // Header yang persis sesuai dengan objek payload kita
+            const ws_data = [
+                ["No. KK", "NIK", "Nama Lengkap", "Blok/No. Rumah", "Jenis Kelamin (Laki-laki/Perempuan)", "Tempat Lahir", "Tanggal Lahir (YYYY-MM-DD)", "Pekerjaan", "Status Keluarga", "Status Tinggal (Tetap/Kontrak)", "No. HP"]
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "TemplateWarga");
             
-            document.getElementById('modal-warga-title').innerHTML = '<i class="fas fa-user-edit text-blue-500 mr-2"></i>Edit Data Warga';
-            document.getElementById('btn-save-warga').innerHTML = "Simpan Perubahan";
-            document.getElementById('modal-warga').classList.remove('hidden');
+            // Atur lebar kolom agar rapi
+            ws['!cols'] = [{wch: 15}, {wch: 20}, {wch: 25}, {wch: 15}, {wch: 30}, {wch: 15}, {wch: 25}, {wch: 20}, {wch: 20}, {wch: 25}, {wch: 15}];
+            
+            XLSX.writeFile(wb, "Template_Import_Warga.xlsx");
+        }
+
+        // Memproses Upload Excel
+        async function handleImportWarga(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('file_import');
+            const file = fileInput.files[0];
+            if(!file) return;
+
+            const btn = document.getElementById('btn-proses-import');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses File...';
+            btn.disabled = true;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // Ubah Excel jadi array Object (Lewati baris pertama/header)
+                    const jsonArr = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    if (jsonArr.length <= 1) {
+                        showToast("File Excel kosong atau format tidak sesuai.", "error");
+                        btn.innerHTML = originalText; btn.disabled = false;
+                        return;
+                    }
+
+                    // Ambil baris ke-2 sampai akhir (data asli)
+                    const rows = jsonArr.slice(1);
+                    let successCount = 0;
+                    
+                    btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...`;
+
+                    // Looping upload data secara batch/satu-satu
+                    for (let i = 0; i < rows.length; i++) {
+                        const row = rows[i];
+                        // Pastikan setidaknya Nama dan NIK terisi (kolom index 1 dan 2)
+                        if (row[2]) { 
+                            const payloadData = {
+                                noKk: row[0] ? String(row[0]) : '',
+                                nik: row[1] ? String(row[1]) : '',
+                                namaLengkap: row[2] ? String(row[2]) : '',
+                                noRumah: row[3] ? String(row[3]) : '',
+                                jenisKelamin: row[4] ? String(row[4]) : 'Laki-laki',
+                                tempatLahir: row[5] ? String(row[5]) : '',
+                                // Format tanggal dari Excel kadang aneh, konversi kasar ke string biasa
+                                tanggalLahir: row[6] ? String(row[6]) : '',
+                                agama: 'Islam', // default
+                                pekerjaan: row[7] ? String(row[7]) : 'Belum/Tidak Bekerja',
+                                statusKeluarga: row[8] ? String(row[8]) : 'Lainnya',
+                                statusTinggal: row[9] ? String(row[9]) : 'Tetap',
+                                noHp: row[10] ? String(row[10]) : ''
+                            };
+                            
+                            // Gunakan fetchApp yang ada untuk menyimpan Warga (Sistem akan otomatis buatkan Akun juga)
+                            const res = await fetchApp('addWarga', { data: payloadData });
+                            if (res.success) successCount++;
+                        }
+                    }
+
+                    document.getElementById('modal-import-warga').classList.add('hidden');
+                    showToast(`${successCount} Warga & Akun berhasil di-import!`, "success");
+                    loadMenu('warga'); // Reload tabel
+
+                } catch (error) {
+                    showToast("Gagal membaca file Excel. Pastikan format sesuai Template.", "error");
+                    console.error(error);
+                } finally {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
         }
 
         async function submitWarga(e) {
