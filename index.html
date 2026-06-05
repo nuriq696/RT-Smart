@@ -431,7 +431,17 @@
                                 if(surat) surat.status = payload.status;
                                 break;
                             case 'getPinjaman': res.data = dbPinjaman; break;
-                            case 'addPinjaman': dbPinjaman.push(payload.data); break;
+                            case 'addPinjaman': 
+                                payload.data.id = payload.data.id || 'PJ' + Date.now();
+                                dbPinjaman.push(payload.data); 
+                                break;
+                            case 'updatePinjaman':
+                                const pjIdx = dbPinjaman.findIndex(x => String(x.id) === String(payload.id));
+                                if(pjIdx !== -1) dbPinjaman[pjIdx] = { ...dbPinjaman[pjIdx], ...payload.data };
+                                break;
+                            case 'deletePinjaman':
+                                dbPinjaman = dbPinjaman.filter(x => String(x.id) !== String(payload.id));
+                                break;
                             case 'getInventaris': res.data = dbInventaris; break;
                             case 'addInventaris': dbInventaris.push(payload.data); break;
                             case 'updateInventaris':
@@ -550,6 +560,12 @@
                         case 'addPinjaman': 
                             payload.data.id = payload.data.id || 'PJ' + Date.now();
                             await db.collection('Pinjaman').doc(payload.data.id).set(payload.data);
+                            break;
+                        case 'updatePinjaman':
+                            await db.collection('Pinjaman').doc(payload.id).update(payload.data);
+                            break;
+                        case 'deletePinjaman':
+                            await db.collection('Pinjaman').doc(payload.id).delete();
                             break;
                             
                         case 'getInventaris': res.data = await getCol('Inventaris'); break;
@@ -962,6 +978,7 @@
                                 <div class="flex items-center gap-2 w-full sm:w-auto">
                                     <button onclick="window.openModalTambahWarga()" class="flex-1 sm:flex-none flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Tambah</button>
                                     <button onclick="window.openModalImportWarga()" class="flex-1 sm:flex-none flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition whitespace-nowrap"><i class="fas fa-file-excel mr-2"></i>Import</button>
+                                    <button onclick="window.deleteAllWarga()" class="flex-1 sm:flex-none flex items-center justify-center bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition whitespace-nowrap"><i class="fas fa-trash-alt mr-2"></i>Hapus Semua</button>
                                 </div>
                                 ` : ''}
                             </div>
@@ -1203,6 +1220,49 @@
             };
         };
 
+        window.deleteAllWarga = function() {
+            if (!window.wargaList || window.wargaList.length === 0) {
+                showToast("Tidak ada data warga untuk dihapus.", "info");
+                return;
+            }
+
+            const modalConfirm = document.createElement('div');
+            modalConfirm.className = "fixed inset-0 bg-black/60 z-[999999] flex items-center justify-center p-4 backdrop-blur-sm";
+            modalConfirm.id = "custom-confirm-modal-delete-all-warga";
+            modalConfirm.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full text-center scale-95 transition-all duration-300">
+                    <div class="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">Hapus SEMUA Data Warga?</h3>
+                    <p class="text-sm text-gray-500 mb-6">Peringatan Keras: Tindakan ini akan menghapus <b>seluruh</b> data penduduk secara permanen. Anda yakin?</p>
+                    <div class="flex gap-3">
+                        <button onclick="document.getElementById('custom-confirm-modal-delete-all-warga').remove()" class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition">Batal</button>
+                        <button id="btn-confirm-delete-all-warga" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition">Ya, Hapus Semua</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modalConfirm);
+            
+            document.getElementById('btn-confirm-delete-all-warga').onclick = async function() {
+                modalConfirm.remove();
+                showToast("Memproses penghapusan massal... Harap tunggu.", "info");
+                
+                // Ambil daftar ID warga yang ada saat ini
+                const itemsToDelete = [...window.wargaList];
+                let successCount = 0;
+                
+                // Loop hapus data satu persatu via API
+                for (let i = 0; i < itemsToDelete.length; i++) {
+                    const res = await fetchApp('deleteWarga', { id: itemsToDelete[i].id });
+                    if (res.success) successCount++;
+                }
+                
+                showToast(`Berhasil menghapus ${successCount} data warga!`, "success");
+                loadMenu('warga'); // Reload halaman
+            };
+        };
+
         window.openModalImportWarga = function() {
             document.getElementById('form-import-warga').reset();
             document.getElementById('modal-import-warga').classList.remove('hidden');
@@ -1282,6 +1342,9 @@
             document.getElementById('page-title').innerText = "Kas & Keuangan RT";
             const res = await fetchApp('getKeuangan');
             const data = res.data || [];
+            
+            // Simpan data ke global untuk fitur Edit
+            window.keuanganDataGlobal = data;
 
             let total = 0, b1 = 0, b2 = 0;
             data.forEach(item => {
@@ -1315,7 +1378,7 @@
                         <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                             <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-history text-indigo-500 mr-2"></i>Riwayat Transaksi</h3>
                             ${currentUser.role === 'admin' ? `
-                            <button onclick="document.getElementById('modal-keuangan').classList.remove('hidden')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition"><i class="fas fa-plus mr-2"></i>Catat Transaksi</button>
+                            <button onclick="window.openModalKeuangan()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition"><i class="fas fa-plus mr-2"></i>Catat Transaksi</button>
                             ` : ''}
                         </div>
                         <div class="overflow-x-auto">
@@ -1326,16 +1389,22 @@
                                         <th class="p-4 border-b font-semibold">Keterangan</th>
                                         <th class="p-4 border-b font-semibold text-right">Nominal</th>
                                         <th class="p-4 border-b font-semibold text-center">Pemegang Kas</th>
+                                        ${currentUser.role === 'admin' ? '<th class="p-4 border-b font-semibold text-center w-24">Aksi</th>' : ''}
                                     </tr>
                                 </thead>
                                 <tbody class="text-sm divide-y divide-gray-100">
-                                    ${data.length === 0 ? `<tr><td colspan="4" class="p-8 text-center text-gray-500 italic">Belum ada catatan keuangan.</td></tr>` : 
+                                    ${data.length === 0 ? `<tr><td colspan="${currentUser.role === 'admin' ? 5 : 4}" class="p-8 text-center text-gray-500 italic">Belum ada catatan keuangan.</td></tr>` : 
                                     data.reverse().map(k => `
-                                        <tr class="hover:bg-gray-50 transition-colors">
-                                            <td class="p-4 text-gray-500 whitespace-nowrap"><i class="far fa-calendar-alt mr-2"></i>${k.tanggal}</td>
-                                            <td class="p-4"><div class="font-bold text-gray-800">${k.kategori}</div><div class="text-xs text-gray-500 mt-1">${k.keterangan}</div></td>
-                                            <td class="p-4 text-right font-bold ${k.jenis === 'Pemasukan' ? 'text-green-600' : 'text-red-500'} whitespace-nowrap">${k.jenis === 'Pemasukan' ? '+' : '-'}${formatRp(k.nominal)}</td>
-                                            <td class="p-4 text-center"><span class="text-[10px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-600 border border-gray-200">${k.penginput || 'Bendahara 1'}</span></td>
+                                        <tr class="hover:bg-gray-50 transition-colors group">
+                                            <td class="p-4 text-gray-500 whitespace-nowrap align-top"><i class="far fa-calendar-alt mr-2"></i>${k.tanggal}</td>
+                                            <td class="p-4 align-top"><div class="font-bold text-gray-800">${k.kategori}</div><div class="text-xs text-gray-500 mt-1">${k.keterangan}</div></td>
+                                            <td class="p-4 text-right font-bold ${k.jenis === 'Pemasukan' ? 'text-green-600' : 'text-red-500'} whitespace-nowrap align-top">${k.jenis === 'Pemasukan' ? '+' : '-'}${formatRp(k.nominal)}</td>
+                                            <td class="p-4 text-center align-top"><span class="text-[10px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-600 border border-gray-200">${k.penginput || 'Bendahara 1'}</span></td>
+                                            ${currentUser.role === 'admin' ? `
+                                            <td class="p-4 text-center opacity-0 group-hover:opacity-100 transition-opacity align-top whitespace-nowrap">
+                                                <button onclick="window.editKas('${k.id}')" class="text-blue-500 hover:text-blue-700 p-1.5 bg-blue-50 hover:bg-blue-100 rounded transition mr-1" title="Edit Transaksi"><i class="fas fa-edit"></i></button>
+                                                <button onclick="window.deleteKas('${k.id}')" class="text-red-500 hover:text-red-700 p-1.5 bg-red-50 hover:bg-red-100 rounded transition" title="Hapus Transaksi"><i class="fas fa-trash-alt"></i></button>
+                                            </td>` : ''}
                                         </tr>
                                     `).join('')}
                                 </tbody>
@@ -1348,11 +1417,12 @@
                 <div id="modal-keuangan" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm">
                     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
                         <div class="flex justify-between items-center p-5 border-b bg-gray-50">
-                            <h3 class="text-lg font-bold text-gray-800">Catat Transaksi Baru</h3>
+                            <h3 class="text-lg font-bold text-gray-800" id="modal-keuangan-title">Catat Transaksi Baru</h3>
                             <button onclick="document.getElementById('modal-keuangan').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
                         </div>
                         <div class="p-6">
                             <form onsubmit="window.submitKas(event)" class="space-y-4">
+                                <input type="hidden" id="k_id">
                                 <div><label class="block text-xs font-bold text-gray-600 mb-1">Tanggal</label><input type="date" id="k_tanggal" required class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"></div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div><label class="block text-xs font-bold text-gray-600 mb-1">Jenis</label><select id="k_jenis" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none"><option value="Pemasukan">Pemasukan (+)</option><option value="Pengeluaran">Pengeluaran (-)</option></select></div>
@@ -1373,18 +1443,91 @@
             document.getElementById('content-area').innerHTML = html;
         }
 
+        window.openModalKeuangan = function() {
+            document.getElementById('k_id').value = '';
+            document.getElementById('k_tanggal').value = new Date().toISOString().split('T')[0];
+            document.getElementById('k_jenis').value = 'Pemasukan';
+            document.getElementById('k_penginput').value = 'Bendahara 1';
+            document.getElementById('k_kategori').value = '';
+            document.getElementById('k_nominal').value = '';
+            document.getElementById('k_ket').value = '';
+            
+            document.getElementById('modal-keuangan-title').innerHTML = 'Catat Transaksi Baru';
+            document.getElementById('btn-save-kas').innerHTML = 'Simpan Transaksi';
+            document.getElementById('modal-keuangan').classList.remove('hidden');
+        };
+
+        window.editKas = function(id) {
+            const k = window.keuanganDataGlobal.find(x => String(x.id) === String(id));
+            if(!k) return;
+
+            document.getElementById('k_id').value = k.id;
+            document.getElementById('k_tanggal').value = k.tanggal || '';
+            document.getElementById('k_jenis').value = k.jenis;
+            document.getElementById('k_penginput').value = k.penginput || 'Bendahara 1';
+            document.getElementById('k_kategori').value = k.kategori;
+            document.getElementById('k_nominal').value = k.nominal;
+            document.getElementById('k_ket').value = k.keterangan || '';
+
+            document.getElementById('modal-keuangan-title').innerHTML = '<i class="fas fa-edit text-blue-500 mr-2"></i>Edit Transaksi Kas';
+            document.getElementById('btn-save-kas').innerHTML = 'Simpan Perubahan';
+            document.getElementById('modal-keuangan').classList.remove('hidden');
+        };
+
         window.submitKas = async function(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-save-kas');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...'; btn.disabled = true;
+
+            const id = document.getElementById('k_id').value;
             const payload = {
-                tanggal: document.getElementById('k_tanggal').value, jenis: document.getElementById('k_jenis').value,
-                penginput: document.getElementById('k_penginput').value, kategori: document.getElementById('k_kategori').value,
-                nominal: document.getElementById('k_nominal').value, keterangan: document.getElementById('k_ket').value
+                tanggal: document.getElementById('k_tanggal').value, 
+                jenis: document.getElementById('k_jenis').value,
+                penginput: document.getElementById('k_penginput').value, 
+                kategori: document.getElementById('k_kategori').value,
+                nominal: document.getElementById('k_nominal').value, 
+                keterangan: document.getElementById('k_ket').value
             };
-            const res = await fetchApp('addKeuangan', { data: payload });
-            if (res.success) { showToast("Transaksi dicatat"); loadMenu('keuangan'); }
-            else { showToast(res.message, 'error'); btn.innerHTML = 'Simpan Transaksi'; btn.disabled = false; }
+
+            const actionName = id ? 'updateKeuangan' : 'addKeuangan';
+            const reqPayload = id ? { id: id, data: payload } : { data: payload };
+
+            const res = await fetchApp(actionName, reqPayload);
+            if (res.success) { showToast(id ? "Transaksi kas diperbarui!" : "Transaksi dicatat", "success"); loadMenu('keuangan'); }
+            else { showToast(res.message, 'error'); btn.innerHTML = originalText; btn.disabled = false; }
+        };
+
+        window.deleteKas = function(id) {
+            const modalConfirm = document.createElement('div');
+            modalConfirm.className = "fixed inset-0 bg-black/60 z-[999999] flex items-center justify-center p-4 backdrop-blur-sm";
+            modalConfirm.id = "custom-confirm-modal-kas";
+            modalConfirm.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full text-center scale-95 transition-all duration-300">
+                    <div class="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
+                        <i class="fas fa-trash-alt"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">Hapus Transaksi?</h3>
+                    <p class="text-sm text-gray-500 mb-6">Transaksi akan dihapus permanen dan <b>Saldo Kas RT</b> akan otomatis disesuaikan. Lanjutkan?</p>
+                    <div class="flex gap-3">
+                        <button onclick="document.getElementById('custom-confirm-modal-kas').remove()" class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition">Batal</button>
+                        <button id="btn-confirm-delete-kas" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition">Ya, Hapus</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modalConfirm);
+            
+            document.getElementById('btn-confirm-delete-kas').onclick = async function() {
+                modalConfirm.remove();
+                showToast("Menghapus transaksi...", "info");
+                const res = await fetchApp('deleteKeuangan', { id: String(id) });
+                if (res.success) {
+                    showToast("Transaksi kas dihapus!", "success");
+                    loadMenu('keuangan');
+                } else {
+                    showToast(res.message, "error");
+                }
+            };
         };
 
         async function renderInventaris() {
@@ -1649,14 +1792,25 @@
                         <div class="p-5 border-b bg-gray-50/50 flex justify-between items-center"><h3 class="text-lg font-bold text-gray-800"><i class="fas fa-users text-indigo-500 mr-2"></i>Daftar Peminjam</h3><button onclick="window.openModalPinjaman()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition">Peminjam Baru</button></div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
-                                <thead><tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider"><th class="p-4 border-b">Warga</th><th class="p-4 border-b text-center">Status</th><th class="p-4 border-b text-right">Sisa Hutang</th><th class="p-4 border-b text-center">Aksi</th></tr></thead>
+                                <thead><tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider"><th class="p-4 border-b">Warga</th><th class="p-4 border-b text-center">Status</th><th class="p-4 border-b text-right">Sisa Hutang</th><th class="p-4 border-b text-center">Aksi Global</th></tr></thead>
                                 <tbody class="text-sm divide-y divide-gray-100">
                                     ${summaryArray.map(s => `
-                                        <tr class="hover:bg-indigo-50/30 cursor-pointer" onclick="window.viewDetailPeminjam('${s.nama}', '${s.noRumah}')">
-                                            <td class="p-4"><div class="font-bold">${s.nama}</div><div class="text-xs text-gray-500">Blok: ${s.noRumah}</div></td>
-                                            <td class="p-4 text-center"><span class="text-[10px] font-bold px-3 py-1 rounded-full ${s.status === 'Lunas' ? 'bg-green-100 text-green-700' : 'bg-rose-100 text-rose-700'}">${s.status}</span></td>
-                                            <td class="p-4 text-right font-bold text-gray-800">${formatRp(s.sisaHutang)}</td>
-                                            <td class="p-4 text-center"><button class="text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg text-xs font-bold">Rincian</button></td>
+                                        <tr class="hover:bg-indigo-50/30 group transition-colors">
+                                            <td class="p-4 cursor-pointer" onclick="window.viewDetailPeminjam('${s.nama}', '${s.noRumah}')">
+                                                <div class="font-bold text-gray-800 group-hover:text-indigo-600 transition-colors">${s.nama}</div>
+                                                <div class="text-xs text-gray-500 mt-0.5">Blok: ${s.noRumah}</div>
+                                            </td>
+                                            <td class="p-4 text-center cursor-pointer" onclick="window.viewDetailPeminjam('${s.nama}', '${s.noRumah}')">
+                                                <span class="text-[10px] font-bold px-3 py-1 rounded-full ${s.status === 'Lunas' ? 'bg-green-100 text-green-700' : 'bg-rose-100 text-rose-700'}">${s.status}</span>
+                                            </td>
+                                            <td class="p-4 text-right font-bold text-gray-800 cursor-pointer" onclick="window.viewDetailPeminjam('${s.nama}', '${s.noRumah}')">
+                                                ${formatRp(s.sisaHutang)}
+                                            </td>
+                                            <td class="p-4 text-center whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onclick="window.viewDetailPeminjam('${s.nama}', '${s.noRumah}')" class="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1.5 rounded text-xs font-bold mr-1" title="Lihat Rincian"><i class="fas fa-list"></i></button>
+                                                <button onclick="window.editPeminjamGlobal('${s.nama}', '${s.noRumah}')" class="text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-1.5 rounded text-xs font-bold mr-1" title="Edit Profil Peminjam"><i class="fas fa-edit"></i></button>
+                                                <button onclick="window.deletePeminjamGlobal('${s.nama}', '${s.noRumah}')" class="text-red-600 bg-red-50 hover:bg-red-100 px-2 py-1.5 rounded text-xs font-bold" title="Hapus Seluruh Riwayat"><i class="fas fa-trash-alt"></i></button>
+                                            </td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
@@ -1666,31 +1820,62 @@
                 </div>
 
                 <!-- Modal Detail Peminjam -->
-                <div id="modal-detail-peminjam" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[9999] flex items-center justify-center p-4">
+                <div id="modal-detail-peminjam" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm">
                     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-                        <div class="flex justify-between items-center p-5 border-b"><h3 class="text-lg font-bold" id="detail_title_nama">Rincian</h3><button onclick="document.getElementById('modal-detail-peminjam').classList.add('hidden')"><i class="fas fa-times text-xl text-gray-500"></i></button></div>
-                        <div class="p-4 flex gap-3 border-b bg-gray-50">
-                            <button onclick="window.openFormTranskasi('Angsuran')" class="flex-1 bg-emerald-500 text-white font-bold py-2 rounded-xl text-sm">Terima Angsuran</button>
-                            <button onclick="window.openFormTranskasi('Pinjaman')" class="flex-1 bg-rose-500 text-white font-bold py-2 rounded-xl text-sm">Beri Pinjaman</button>
+                        <div class="flex justify-between items-center p-5 border-b bg-gray-50">
+                            <h3 class="text-lg font-bold text-gray-800" id="detail_title_nama">Rincian Peminjam</h3>
+                            <button onclick="document.getElementById('modal-detail-peminjam').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
                         </div>
-                        <div class="p-4 overflow-y-auto"><table class="w-full text-left"><tbody class="text-sm divide-y divide-gray-100" id="detail_tbody"></tbody></table></div>
+                        
+                        <div class="p-0 flex-1 overflow-y-auto">
+                            <!-- STATISTIK MINI (Elemen yang sebelumnya hilang) -->
+                            <div class="grid grid-cols-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white p-4">
+                                <div class="text-center border-r border-white/20">
+                                    <p class="text-[10px] uppercase tracking-wider opacity-80 mb-1">Sisa Hutang</p>
+                                    <p class="text-xl font-black" id="detail_sisa_hutang">Rp0</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-[10px] uppercase tracking-wider opacity-80 mb-1">Total Diangsur</p>
+                                    <p class="text-xl font-bold opacity-90" id="detail_total_angsur">Rp0</p>
+                                </div>
+                            </div>
+
+                            <div class="p-4 flex gap-3 border-b bg-gray-50">
+                                <button onclick="window.openFormTranskasi('Angsuran')" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 rounded-xl text-sm shadow-sm transition"><i class="fas fa-hand-holding-usd mr-2"></i>Terima Angsuran</button>
+                                <button onclick="window.openFormTranskasi('Pinjaman')" class="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 rounded-xl text-sm shadow-sm transition"><i class="fas fa-money-bill-wave mr-2"></i>Beri Pinjaman</button>
+                            </div>
+                            
+                            <div class="p-4">
+                                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Histori Transaksi Warga Ini</h4>
+                                <div class="border rounded-xl overflow-hidden">
+                                    <table class="w-full text-left">
+                                        <tbody class="text-sm divide-y divide-gray-100" id="detail_tbody">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Modal Form Pinjaman -->
-                <div id="modal-pinjaman" class="hidden fixed inset-0 bg-black bg-opacity-70 z-[99999] flex items-center justify-center p-4">
-                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
-                        <div class="flex justify-between items-center p-5 border-b"><h3 class="text-lg font-bold" id="form_title_transaksi">Transaksi</h3><button onclick="document.getElementById('modal-pinjaman').classList.add('hidden')"><i class="fas fa-times text-xl"></i></button></div>
+                <div id="modal-pinjaman" class="hidden fixed inset-0 bg-black bg-opacity-70 z-[99999] flex items-center justify-center p-4 backdrop-blur-md">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col transform transition-all">
+                        <div class="flex justify-between items-center p-5 border-b bg-gray-50">
+                            <h3 class="text-lg font-bold text-gray-800" id="form_title_transaksi">Catat Transaksi</h3>
+                            <button onclick="document.getElementById('modal-pinjaman').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                        </div>
                         <div class="p-6">
-                            <form onsubmit="window.submitPinjaman(event)" class="space-y-4">
+                            <form onsubmit="submitPinjaman(event)" class="space-y-4">
+                                <input type="hidden" id="pj_id">
                                 <input type="hidden" id="pj_jenis">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-600 mb-1">Tanggal</label>
-                                    <input type="date" id="pj_tanggal" required class="w-full p-3 border rounded-xl text-sm bg-gray-50">
+                                    <input type="date" id="pj_tanggal" required class="w-full p-3 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-medium">
                                 </div>
                                 <div id="div_pilih_warga" class="hidden">
                                     <label class="block text-xs font-bold text-gray-600 mb-1">Pilih Warga</label>
-                                    <select id="pj_nama_select" onchange="window.handleSelectPeminjam(this.value)" class="w-full p-3 border rounded-xl text-sm bg-gray-50">
+                                    <select id="pj_nama_select" onchange="handleSelectPeminjam(this.value)" class="w-full p-3 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-medium cursor-pointer">
                                         <option value="">-- Pilih Nama Warga --</option>
                                         ${dataWarga.map(w => `<option value="${w.namaLengkap}|${w.noRumah}">${w.namaLengkap} (${w.noRumah})</option>`).join('')}
                                     </select>
@@ -1720,18 +1905,9 @@
             document.getElementById('pj_nama').value = parts[0];
             document.getElementById('pj_rumah').value = parts[1];
         };
-        
-        window.viewDetailPeminjam = function(nama, noRumah) {
-            const rawData = window.pinjamanDataGlobal.filter(p => p.namaPeminjam === nama && p.noRumah === noRumah);
-            window.activePeminjam = { nama, noRumah };
-            let tbodyHtml = '';
-            rawData.reverse().forEach(p => { tbodyHtml += `<tr class="hover:bg-gray-50"><td class="p-3"><div class="font-bold text-xs">${p.tanggal}</div><span class="text-[9px] font-bold uppercase">${p.jenis}</span></td><td class="p-3 text-xs">${p.keterangan}</td><td class="p-3 text-right font-bold">${formatRp(p.nominal)}</td></tr>`; });
-            document.getElementById('detail_title_nama').innerText = `${nama} (Blok ${noRumah})`;
-            document.getElementById('detail_tbody').innerHTML = tbodyHtml;
-            document.getElementById('modal-detail-peminjam').classList.remove('hidden');
-        };
 
-        window.openModalPinjaman = function() {
+        function openModalPinjaman() {
+            document.getElementById('pj_id').value = '';
             document.getElementById('pj_tanggal').value = new Date().toISOString().split('T')[0]; 
             document.getElementById('pj_nama_select').value = '';
             document.getElementById('pj_nama').value = '';
@@ -1741,12 +1917,57 @@
             document.getElementById('pj_jenis').value = 'Pinjaman'; 
             
             document.getElementById('div_pilih_warga').classList.remove('hidden');
-            document.getElementById('form_title_transaksi').innerText = 'Beri Pinjaman Baru';
-            document.getElementById('btn-save-pinjaman').className = "w-full bg-rose-600 text-white font-bold py-3 rounded-xl mt-2";
+            document.getElementById('form_title_transaksi').innerHTML = '<i class="fas fa-money-bill-wave text-rose-500 mr-2"></i>Beri Pinjaman Baru';
+            document.getElementById('btn-save-pinjaman').className = "w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl mt-2 shadow-sm transition";
+            document.getElementById('btn-save-pinjaman').innerHTML = "Simpan Transaksi";
+            
             document.getElementById('modal-pinjaman').classList.remove('hidden');
-        };
+        }
 
-        window.openFormTranskasi = function(jenisTransaksi) {
+        function viewDetailPeminjam(nama, noRumah) {
+            const rawData = window.pinjamanDataGlobal.filter(p => p.namaPeminjam === nama && p.noRumah === noRumah);
+            window.activePeminjam = { nama, noRumah };
+            
+            let tPinjam = 0, tAngsur = 0;
+            let tbodyHtml = '';
+
+            rawData.reverse().forEach(p => {
+                const val = Number(p.nominal);
+                if(p.jenis === 'Pinjaman') tPinjam += val; else tAngsur += val;
+                
+                tbodyHtml += `
+                    <tr class="hover:bg-gray-50 group transition-colors">
+                        <td class="p-3 align-top whitespace-nowrap">
+                            <div class="text-xs font-bold text-gray-800">${p.tanggal}</div>
+                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-md ${p.jenis === 'Pinjaman' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'} uppercase inline-block mt-1 tracking-wider">${p.jenis}</span>
+                        </td>
+                        <td class="p-3 align-top">
+                            <div class="text-xs text-gray-600 leading-snug">${p.keterangan || '-'}</div>
+                        </td>
+                        <td class="p-3 text-right font-bold align-top whitespace-nowrap ${p.jenis === 'Pinjaman' ? 'text-rose-600' : 'text-emerald-600'}">
+                            ${p.jenis === 'Pinjaman' ? '-' : '+'}${formatRp(val)}
+                        </td>
+                        ${currentUser.role === 'admin' ? `
+                        <td class="p-3 text-right opacity-0 group-hover:opacity-100 transition-opacity align-top whitespace-nowrap">
+                            <button onclick="editPinjaman('${p.id}')" class="text-blue-500 hover:text-blue-700 p-1.5 bg-blue-50 hover:bg-blue-100 rounded transition mr-1" title="Edit Transaksi"><i class="fas fa-edit"></i></button>
+                            <button onclick="deletePinjaman('${p.id}')" class="text-red-500 hover:text-red-700 p-1.5 bg-red-50 hover:bg-red-100 rounded transition" title="Hapus Transaksi"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                        ` : ''}
+                    </tr>
+                `;
+            });
+
+            let sisa = tPinjam - tAngsur;
+            
+            document.getElementById('detail_title_nama').innerText = `${nama} (Blok ${noRumah})`;
+            document.getElementById('detail_sisa_hutang').innerText = formatRp(sisa < 0 ? 0 : sisa);
+            document.getElementById('detail_total_angsur').innerText = formatRp(tAngsur);
+            document.getElementById('detail_tbody').innerHTML = tbodyHtml;
+            document.getElementById('modal-detail-peminjam').classList.remove('hidden');
+        }
+
+        function openFormTranskasi(jenisTransaksi) {
+            document.getElementById('pj_id').value = '';
             document.getElementById('pj_tanggal').value = new Date().toISOString().split('T')[0]; 
             document.getElementById('pj_nama').value = window.activePeminjam.nama; 
             document.getElementById('pj_rumah').value = window.activePeminjam.noRumah; 
@@ -1755,23 +1976,208 @@
             document.getElementById('pj_jenis').value = jenisTransaksi;
             
             document.getElementById('div_pilih_warga').classList.add('hidden');
-            document.getElementById('form_title_transaksi').innerText = jenisTransaksi;
             
+            const title = document.getElementById('form_title_transaksi');
             const btnSave = document.getElementById('btn-save-pinjaman');
+            
             if(jenisTransaksi === 'Angsuran') {
-                btnSave.className = "w-full bg-emerald-600 text-white font-bold py-3 rounded-xl mt-2";
+                title.innerHTML = '<i class="fas fa-hand-holding-usd text-emerald-500 mr-2"></i>Terima Angsuran';
+                btnSave.className = "w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl mt-2 shadow-sm transition";
             } else {
-                btnSave.className = "w-full bg-rose-600 text-white font-bold py-3 rounded-xl mt-2";
+                title.innerHTML = '<i class="fas fa-money-bill-wave text-rose-500 mr-2"></i>Beri Pinjaman Tambahan';
+                btnSave.className = "w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl mt-2 shadow-sm transition";
             }
+            btnSave.innerHTML = "Simpan Transaksi";
 
             document.getElementById('modal-detail-peminjam').classList.add('hidden'); 
             document.getElementById('modal-pinjaman').classList.remove('hidden');
+        }
+
+        function editPinjaman(id) {
+            const trx = window.pinjamanDataGlobal.find(p => String(p.id) === String(id));
+            if(!trx) return;
+
+            document.getElementById('pj_id').value = trx.id;
+            document.getElementById('pj_tanggal').value = trx.tanggal || '';
+            document.getElementById('pj_nama').value = trx.namaPeminjam;
+            document.getElementById('pj_rumah').value = trx.noRumah;
+            document.getElementById('pj_nominal').value = trx.nominal;
+            document.getElementById('pj_ket').value = trx.keterangan || '';
+            document.getElementById('pj_jenis').value = trx.jenis;
+
+            document.getElementById('div_pilih_warga').classList.add('hidden');
+            document.getElementById('form_title_transaksi').innerHTML = '<i class="fas fa-edit text-blue-500 mr-2"></i>Edit Transaksi';
+            
+            const btnSave = document.getElementById('btn-save-pinjaman');
+            btnSave.className = "w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl mt-2 shadow-sm transition";
+            btnSave.innerHTML = "Simpan Perubahan";
+
+            document.getElementById('modal-detail-peminjam').classList.add('hidden');
+            document.getElementById('modal-pinjaman').classList.remove('hidden');
+        }
+
+        async function submitPinjaman(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-pinjaman');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...'; 
+            btn.disabled = true;
+
+            const id = document.getElementById('pj_id').value;
+            const payload = { 
+                tanggal: document.getElementById('pj_tanggal').value, 
+                namaPeminjam: document.getElementById('pj_nama').value, 
+                noRumah: document.getElementById('pj_rumah').value, 
+                jenis: document.getElementById('pj_jenis').value, 
+                nominal: Number(document.getElementById('pj_nominal').value), 
+                keterangan: document.getElementById('pj_ket').value 
+            };
+
+            const actionName = id ? 'updatePinjaman' : 'addPinjaman';
+            const reqPayload = id ? { id: id, data: payload } : { data: payload };
+
+            const res = await fetchApp(actionName, reqPayload);
+            if (res.success) { 
+                showToast(id ? "Transaksi berhasil diperbarui!" : "Transaksi dicatat", 'success'); 
+                loadMenu('pinjaman'); 
+            } else { 
+                showToast(res.message, 'error'); 
+                btn.innerHTML = originalText; 
+                btn.disabled = false; 
+            }
+        }
+
+        window.deletePinjaman = function(id) {
+            const modalConfirm = document.createElement('div');
+            modalConfirm.className = "fixed inset-0 bg-black/60 z-[999999] flex items-center justify-center p-4 backdrop-blur-sm";
+            modalConfirm.id = "custom-confirm-modal-pj";
+            modalConfirm.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full text-center scale-95 transition-all duration-300">
+                    <div class="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
+                        <i class="fas fa-trash-alt"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">Hapus Transaksi?</h3>
+                    <p class="text-sm text-gray-500 mb-6">Data transaksi akan dihapus permanen dan total saldo akan disesuaikan otomatis. Lanjutkan?</p>
+                    <div class="flex gap-3">
+                        <button onclick="document.getElementById('custom-confirm-modal-pj').remove()" class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition">Batal</button>
+                        <button id="btn-confirm-delete-pj" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition">Ya, Hapus</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modalConfirm);
+            
+            document.getElementById('btn-confirm-delete-pj').onclick = async function() {
+                modalConfirm.remove();
+                document.getElementById('modal-detail-peminjam').classList.add('hidden');
+                showToast("Menghapus transaksi...", "info");
+                
+                const res = await fetchApp('deletePinjaman', { id: String(id) });
+                if (res.success) {
+                    showToast("Transaksi berhasil dihapus!", "success");
+                    loadMenu('pinjaman');
+                } else {
+                    showToast(res.message, "error");
+                }
+            };
         };
 
-        window.submitPinjaman = async function(e) {
-            e.preventDefault();
-            const payload = { tanggal: document.getElementById('pj_tanggal').value, namaPeminjam: document.getElementById('pj_nama').value, noRumah: document.getElementById('pj_rumah').value, jenis: document.getElementById('pj_jenis').value, nominal: document.getElementById('pj_nominal').value, keterangan: document.getElementById('pj_ket').value };
-            await fetchApp('addPinjaman', { data: payload }); showToast("Disimpan"); loadMenu('pinjaman');
+        // FUNGSI BARU: EDIT PROFIL PEMINJAM GLOBAL
+        window.editPeminjamGlobal = function(nama, noRumah) {
+            if(event) event.stopPropagation(); // Mencegah klik menyebar ke buka modal rincian
+            
+            const modalHtml = `
+            <div id="modal-epg" class="fixed inset-0 bg-black/60 z-[999999] flex items-center justify-center p-4 backdrop-blur-sm">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col scale-95 transition-transform duration-300">
+                    <div class="flex justify-between items-center p-5 border-b bg-gray-50">
+                        <h3 class="text-lg font-bold text-gray-800">Edit Profil Peminjam</h3>
+                        <button onclick="document.getElementById('modal-epg').remove()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-xs text-amber-600 bg-amber-50 p-3 rounded-lg mb-4 border border-amber-200 leading-relaxed"><i class="fas fa-info-circle mr-1"></i> Mengubah nama/blok di sini akan otomatis memperbarui <b>seluruh</b> riwayat transaksi miliknya.</p>
+                        <form id="form-epg" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-600 mb-1">Nama Peminjam</label>
+                                <input type="text" id="epg_nama" value="${nama}" required class="w-full p-3 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-600 mb-1">Blok (No. Rumah)</label>
+                                <input type="text" id="epg_rumah" value="${noRumah}" required class="w-full p-3 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div class="pt-3 flex justify-end gap-3 border-t mt-5 border-gray-100">
+                                <button type="button" onclick="document.getElementById('modal-epg').remove()" class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition">Batal</button>
+                                <button type="submit" id="btn-save-epg" class="flex-1 px-5 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition">Simpan Perubahan</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>`;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            document.getElementById('form-epg').onsubmit = async function(e) {
+                e.preventDefault();
+                const btn = document.getElementById('btn-save-epg');
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...';
+                btn.disabled = true;
+                
+                const newNama = document.getElementById('epg_nama').value;
+                const newRumah = document.getElementById('epg_rumah').value;
+                
+                // Cari semua riwayat orang ini
+                const recordsToUpdate = window.pinjamanDataGlobal.filter(p => p.namaPeminjam === nama && p.noRumah === noRumah);
+                
+                let successCount = 0;
+                for(let r of recordsToUpdate) {
+                    await fetchApp('updatePinjaman', { 
+                        id: String(r.id), 
+                        data: { namaPeminjam: newNama, noRumah: newRumah } 
+                    });
+                    successCount++;
+                }
+                
+                document.getElementById('modal-epg').remove();
+                showToast(`Berhasil memperbarui ${successCount} riwayat transaksi!`, "success");
+                loadMenu('pinjaman'); // Reload halaman
+            };
+        };
+
+        // FUNGSI BARU: HAPUS PEMINJAM GLOBAL (BESERTA RIWAYAT)
+        window.deletePeminjamGlobal = function(nama, noRumah) {
+            if(event) event.stopPropagation(); 
+
+            const modalConfirm = document.createElement('div');
+            modalConfirm.className = "fixed inset-0 bg-black/60 z-[999999] flex items-center justify-center p-4 backdrop-blur-sm";
+            modalConfirm.id = "custom-confirm-modal-epg";
+            modalConfirm.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full text-center scale-95 transition-all duration-300">
+                    <div class="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">Hapus Seluruh Data?</h3>
+                    <p class="text-sm text-gray-500 mb-6">Yakin ingin menghapus <b>semua</b> riwayat pinjaman dan angsuran untuk <b>${nama}</b>?<br>Tindakan ini tidak bisa dibatalkan.</p>
+                    <div class="flex gap-3">
+                        <button onclick="document.getElementById('custom-confirm-modal-epg').remove()" class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition">Batal</button>
+                        <button id="btn-confirm-delete-epg" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition">Ya, Hapus Semua</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modalConfirm);
+            
+            document.getElementById('btn-confirm-delete-epg').onclick = async function() {
+                modalConfirm.remove();
+                showToast("Memproses penghapusan massal...", "info");
+                
+                const recordsToDelete = window.pinjamanDataGlobal.filter(p => p.namaPeminjam === nama && p.noRumah === noRumah);
+                let successCount = 0;
+                
+                for(let r of recordsToDelete) {
+                    await fetchApp('deletePinjaman', { id: String(r.id) });
+                    successCount++;
+                }
+                
+                showToast(`${successCount} riwayat transaksi dihapus!`, "success");
+                loadMenu('pinjaman');
+            };
         };
 
         async function renderPengumuman() {
