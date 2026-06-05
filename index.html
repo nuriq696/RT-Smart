@@ -862,7 +862,7 @@
                                                     <h2 class="text-xl md:text-3xl font-bold mb-2 font-serif text-amber-400 italic tracking-wide">"${s.pitutur}"</h2>
                                                     <p class="text-gray-200 text-xs md:text-sm border-l-4 border-amber-500 pl-3 font-medium opacity-90">${s.arti}</p>
                                                 ` : `
-                                                    <h2 class="text-2xl md:text-3xl font-bold mb-1">Lingkungan RT 0 Smart</h2>
+                                                    <h2 class="text-2xl md:text-3xl font-bold mb-1">Lingkungan RT 02 Smart</h2>
                                                     <p class="text-gray-200 text-sm md:text-base">Informasi dan Kegiatan Warga</p>
                                                 `}
                                             </div>
@@ -1677,11 +1677,35 @@
         };
 
         window.deleteInventaris = function(id) {
-            if(confirm("Yakin hapus barang ini?")) {
-                fetchApp('deleteInventaris', { id: id }).then(res => {
-                    if (res.success) { showToast("Barang dihapus!"); loadMenu('inventaris'); }
-                });
-            }
+            const modalConfirm = document.createElement('div');
+            modalConfirm.className = "fixed inset-0 bg-black/60 z-[999999] flex items-center justify-center p-4 backdrop-blur-sm";
+            modalConfirm.id = "custom-confirm-modal-inv";
+            modalConfirm.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full text-center scale-95 transition-all duration-300">
+                    <div class="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
+                        <i class="fas fa-trash-alt"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">Hapus Inventaris?</h3>
+                    <p class="text-sm text-gray-500 mb-6">Barang ini akan dihapus secara permanen dari daftar aset. Lanjutkan?</p>
+                    <div class="flex gap-3">
+                        <button onclick="document.getElementById('custom-confirm-modal-inv').remove()" class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition">Batal</button>
+                        <button id="btn-confirm-delete-inv" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition">Ya, Hapus</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modalConfirm);
+            
+            document.getElementById('btn-confirm-delete-inv').onclick = async function() {
+                modalConfirm.remove();
+                showToast("Menghapus barang...", "info");
+                const res = await fetchApp('deleteInventaris', { id: String(id) });
+                if (res.success) {
+                    showToast("Barang berhasil dihapus dari sistem!", "success");
+                    loadMenu('inventaris');
+                } else {
+                    showToast(res.message, "error");
+                }
+            };
         };
 
         async function renderPinjaman() {
@@ -1887,11 +1911,12 @@
                                     <input type="date" id="pj_tanggal" required class="w-full p-3 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-medium">
                                 </div>
                                 <div id="div_pilih_warga" class="hidden">
-                                    <label class="block text-xs font-bold text-gray-600 mb-1">Pilih Warga</label>
-                                    <select id="pj_nama_select" onchange="handleSelectPeminjam(this.value)" class="w-full p-3 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-medium cursor-pointer">
-                                        <option value="">-- Pilih Nama Warga --</option>
-                                        ${dataWarga.map(w => `<option value="${w.namaLengkap}|${w.noRumah}">${w.namaLengkap} (${w.noRumah})</option>`).join('')}
-                                    </select>
+                                    <label class="block text-xs font-bold text-gray-600 mb-1">Cari Nama Warga</label>
+                                    <input type="text" list="datalist_warga" id="pj_search_warga" oninput="window.handleSelectPeminjam(this.value)" placeholder="Ketik nama warga..." class="w-full p-3 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-medium">
+                                    <datalist id="datalist_warga">
+                                        ${dataWarga.map(w => `<option value="${w.namaLengkap} - Blok ${w.noRumah}"></option>`).join('')}
+                                    </datalist>
+                                    <p class="text-[10px] text-gray-500 mt-1">Ketik sebagian nama, lalu klik dari daftar saran yang muncul.</p>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div><label class="block text-xs font-bold text-gray-600 mb-1">Nama</label><input type="text" id="pj_nama" required readonly class="w-full p-3 border rounded-xl text-sm bg-gray-100 text-gray-500"></div>
@@ -1914,15 +1939,30 @@
                 document.getElementById('pj_rumah').value = '';
                 return;
             }
-            const parts = val.split('|');
-            document.getElementById('pj_nama').value = parts[0];
-            document.getElementById('pj_rumah').value = parts[1];
+            
+            // Logika untuk memecah value dari Datalist Autocomplete
+            if(val.includes(' - Blok ')) {
+                const parts = val.split(' - Blok ');
+                document.getElementById('pj_nama').value = parts[0].trim();
+                document.getElementById('pj_rumah').value = parts[1].trim();
+            } else if (val.includes('|')) {
+                // Cadangan (Fallback) jika ada data yang masih menggunakan pembatas lama
+                const parts = val.split('|');
+                document.getElementById('pj_nama').value = parts[0];
+                document.getElementById('pj_rumah').value = parts[1];
+            }
         };
 
         function openModalPinjaman() {
             document.getElementById('pj_id').value = '';
             document.getElementById('pj_tanggal').value = new Date().toISOString().split('T')[0]; 
-            document.getElementById('pj_nama_select').value = '';
+            
+            const searchInput = document.getElementById('pj_search_warga');
+            if(searchInput) searchInput.value = '';
+            
+            const oldSelect = document.getElementById('pj_nama_select');
+            if(oldSelect) oldSelect.value = '';
+            
             document.getElementById('pj_nama').value = '';
             document.getElementById('pj_rumah').value = ''; 
             document.getElementById('pj_nominal').value = ''; 
