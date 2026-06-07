@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sistem Informasi Manajemen RT 02 Smart</title>
+    <title>RT 02 Smart</title>
     
     <!-- PWA META TAGS -->
     <meta name="theme-color" content="#1e3a8a">
@@ -82,7 +82,7 @@
                 <div id="login-logo-container" class="w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-2xl mx-auto flex items-center justify-center text-white text-4xl shadow-lg mb-4 transform rotate-3">
                     <i id="login-logo-icon" class="fas fa-city -rotate-3"></i>
                 </div>
-                <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">KUDEN</h1>
+                <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">RT 02 Smart</h1>
                 <p class="text-sm text-gray-500 mt-2 font-medium">Sistem Informasi Manajemen Warga</p>
             </div>
             
@@ -104,14 +104,16 @@
                         </div>
                     </div>
                 </div>
-                <button type="submit" id="btn-login" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-0.5 transition-all duration-200 flex justify-center items-center">
-                    <span>Masuk ke Sistem</span> <i class="fas fa-arrow-right ml-2 text-sm"></i>
-                </button>
-                <button type="button" id="btn-install-pwa" onclick="window.installPWA()" class="hidden w-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold py-3.5 px-4 rounded-xl shadow-sm hover:bg-indigo-100 transition-all duration-200 flex justify-center items-center mt-3">
-                    <i class="fas fa-download mr-2 text-lg"></i> Install Aplikasi ke HP
-                </button>
+                <div class="space-y-3 pt-2">
+                    <button type="submit" id="btn-login" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-0.5 transition-all duration-200 flex justify-center items-center">
+                        <span>Masuk ke Sistem</span> <i class="fas fa-arrow-right ml-2 text-sm"></i>
+                    </button>
+                    <button type="button" id="btn-install-pwa" onclick="window.installPWA()" class="hidden w-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold py-3.5 px-4 rounded-xl shadow-sm hover:bg-indigo-100 transition-all duration-200 flex justify-center items-center">
+                        <i class="fas fa-download mr-2 text-lg"></i> Install Aplikasi ke HP
+                    </button>
+                </div>
             </form>
-            <div class="mt-6 text-center text-xs text-gray-400 font-medium">&copy; 2026 KUDEN - All Rights Reserved</div>
+            <div class="mt-6 text-center text-xs text-gray-400 font-medium">&copy; 2026 RT 02 Smart - All Rights Reserved</div>
         </div>
     </div>
 
@@ -124,7 +126,7 @@
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-xl backdrop-blur-sm shadow-inner"><i class="fas fa-city text-blue-300"></i></div>
                     <div>
-                        <h2 class="text-xl font-bold tracking-tight">KUDEN</h2>
+                        <h2 class="text-xl font-bold tracking-tight">RT 02 Smart</h2>
                         <div class="text-[10px] text-indigo-300 uppercase tracking-widest font-semibold" id="user-role-badge">Admin</div>
                     </div>
                 </div>
@@ -440,10 +442,22 @@
                                 dbPinjaman = dbPinjaman.filter(x => String(x.id) !== String(payload.id));
                                 break;
                             case 'updatePeminjamGlobal':
-                                dbPinjaman.forEach(p => { if (p.peminjam === payload.oldNama && p.blok === payload.oldBlok) { p.peminjam = payload.newNama; p.blok = payload.newBlok; } });
+                                dbPinjaman.forEach(p => { 
+                                    // Perbaikan: Mencocokkan dengan field 'namaPeminjam' atau 'peminjam' (data dummy awal)
+                                    const namaP = p.namaPeminjam || p.peminjam;
+                                    if (namaP === payload.oldNama && p.blok === payload.oldBlok) { 
+                                        p.namaPeminjam = payload.newNama; 
+                                        p.peminjam = payload.newNama; // update juga field legacy
+                                        p.blok = payload.newBlok; 
+                                    } 
+                                });
                                 break;
                             case 'deletePeminjamGlobal':
-                                dbPinjaman = dbPinjaman.filter(p => !(p.peminjam === payload.nama && p.blok === payload.blok));
+                                // Perbaikan: Mencocokkan dengan field 'namaPeminjam' atau 'peminjam'
+                                dbPinjaman = dbPinjaman.filter(p => {
+                                    const namaP = p.namaPeminjam || p.peminjam;
+                                    return !(namaP === payload.nama && p.blok === payload.blok);
+                                });
                                 break;
                             case 'getInventaris': res.data = dbInventaris; break;
                             case 'addInventaris': dbInventaris.push(payload.data); break;
@@ -551,11 +565,25 @@
                         case 'deletePinjaman': await db.collection('Pinjaman').doc(payload.id).delete(); break;
                         case 'updatePeminjamGlobal':
                             const pjList = await getCol('Pinjaman');
-                            for(let p of pjList) { if (p.peminjam === payload.oldNama && p.blok === payload.oldBlok) { await db.collection('Pinjaman').doc(p.id).update({ peminjam: payload.newNama, blok: payload.newBlok }); } }
+                            for(let p of pjList) { 
+                                const namaP = p.namaPeminjam || p.peminjam;
+                                if (namaP === payload.oldNama && p.blok === payload.oldBlok) { 
+                                    await db.collection('Pinjaman').doc(p.id).update({ 
+                                        namaPeminjam: payload.newNama, 
+                                        peminjam: payload.newNama, // Update field legacy
+                                        blok: payload.newBlok 
+                                    }); 
+                                } 
+                            }
                             break;
                         case 'deletePeminjamGlobal':
                             const pjDelList = await getCol('Pinjaman');
-                            for(let p of pjDelList) { if (p.peminjam === payload.nama && p.blok === payload.blok) { await db.collection('Pinjaman').doc(p.id).delete(); } }
+                            for(let p of pjDelList) { 
+                                const namaP = p.namaPeminjam || p.peminjam;
+                                if (namaP === payload.nama && p.blok === payload.blok) { 
+                                    await db.collection('Pinjaman').doc(p.id).delete(); 
+                                } 
+                            }
                             break;
                         case 'getInventaris': res.data = await getCol('Inventaris'); break;
                         case 'addInventaris': payload.data.id = payload.data.id || 'INV' + Date.now(); await db.collection('Inventaris').doc(payload.data.id).set(payload.data); break;
@@ -713,7 +741,7 @@
                                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-6 md:p-8 pointer-events-none">
                                             <div class="text-white drop-shadow-md">
                                                 <h2 class="text-2xl md:text-3xl font-bold mb-1 font-serif text-amber-400 italic">Selamat Datang, ${currentUser.nama}!</h2>
-                                                <p class="text-gray-200 text-sm md:text-base">Sistem Informasi Manajemen KUDEN</p>
+                                                <p class="text-gray-200 text-sm md:text-base">Sistem Informasi Manajemen RT 02 Smart</p>
                                             </div>
                                         </div>
                                     </div>`).join('')
@@ -804,7 +832,7 @@
                                         <img src="${s.url}" class="w-full h-full object-cover brightness-75">
                                         <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex items-end p-6 md:p-10 pointer-events-none">
                                             <div class="text-white drop-shadow-xl max-w-3xl">
-                                                ${s.pitutur ? `<h2 class="text-xl md:text-3xl font-bold mb-2 font-serif text-amber-400 italic tracking-wide">"${s.pitutur}"</h2><p class="text-gray-200 text-xs md:text-sm border-l-4 border-amber-500 pl-3 font-medium opacity-90">${s.arti}</p>` : `<h2 class="text-2xl md:text-3xl font-bold mb-1">Lingkungan KUDEN</h2><p class="text-gray-200 text-sm md:text-base">Informasi dan Kegiatan Warga</p>`}
+                                                ${s.pitutur ? `<h2 class="text-xl md:text-3xl font-bold mb-2 font-serif text-amber-400 italic tracking-wide">"${s.pitutur}"</h2><p class="text-gray-200 text-xs md:text-sm border-l-4 border-amber-500 pl-3 font-medium opacity-90">${s.arti}</p>` : `<h2 class="text-2xl md:text-3xl font-bold mb-1">Lingkungan RT 02 Smart</h2><p class="text-gray-200 text-sm md:text-base">Informasi dan Kegiatan Warga</p>`}
                                             </div>
                                         </div>
                                     </div>`).join('')
@@ -1185,7 +1213,28 @@
 
                     json.forEach((r, i) => {
                         if(r.namaLengkap && r.noRumah) {
-                            wBatch.push({ id: 'W_IMP' + timeSeed + i, noKk: String(r.noKk || ''), nik: String(r.nik || ''), namaLengkap: r.namaLengkap, noRumah: String(r.noRumah), jenisKelamin: r.jenisKelamin || 'Laki-laki', tempatLahir: r.tempatLahir || '', tanggalLahir: r.tanggalLahir || '', agama: 'Islam', pekerjaan: r.pekerjaan || '', statusKeluarga: r.statusKeluarga || 'Lainnya', statusTinggal: r.statusTinggal || 'Tetap', noHp: String(r.noHp || '') });
+                            let parsedTgl = '';
+                            let tglRaw = r.tanggalLahir;
+                            if(tglRaw) {
+                                if(typeof tglRaw === 'number' || (!isNaN(tglRaw) && String(tglRaw).trim() !== '')) {
+                                    // Mengonversi Nomor Seri Excel menjadi Tanggal ISO (YYYY-MM-DD)
+                                    const serial = Number(tglRaw);
+                                    const jsDate = new Date(Math.round((serial - 25569) * 86400 * 1000));
+                                    parsedTgl = jsDate.toISOString().split('T')[0];
+                                } else if (typeof tglRaw === 'string') {
+                                    // Memperbaiki format string seperti DD/MM/YYYY atau DD-MM-YYYY menjadi YYYY-MM-DD
+                                    const parts = tglRaw.split(/[\/\-]/);
+                                    if (parts.length === 3) {
+                                        if (parts[2].length === 4) parsedTgl = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                                        else if (parts[0].length === 4) parsedTgl = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                                        else parsedTgl = tglRaw;
+                                    } else {
+                                        parsedTgl = tglRaw;
+                                    }
+                                }
+                            }
+
+                            wBatch.push({ id: 'W_IMP' + timeSeed + i, noKk: String(r.noKk || ''), nik: String(r.nik || ''), namaLengkap: r.namaLengkap, noRumah: String(r.noRumah), jenisKelamin: r.jenisKelamin || 'Laki-laki', tempatLahir: r.tempatLahir || '', tanggalLahir: parsedTgl, agama: 'Islam', pekerjaan: r.pekerjaan || '', statusKeluarga: r.statusKeluarga || 'Lainnya', statusTinggal: r.statusTinggal || 'Tetap', noHp: String(r.noHp || '') });
                             uBatch.push({ id: 'U_IMP' + timeSeed + i, username: r.namaLengkap, password: "rt02oke", role: "warga", noRumah: String(r.noRumah), nama: r.namaLengkap });
                         }
                     });
@@ -1365,6 +1414,13 @@
             document.getElementById('page-title').innerText = "Pinjaman Warga";
             const res = await window.fetchApp('getPinjaman');
             let data = res.data || [];
+
+            // Standarisasi field nama peminjam antara data dummy lama ('peminjam') dan input baru ('namaPeminjam')
+            data = data.map(item => {
+                if(!item.namaPeminjam && item.peminjam) item.namaPeminjam = item.peminjam;
+                if(!item.noRumah && item.blok) item.noRumah = item.blok;
+                return item;
+            });
 
             const resWarga = await window.fetchApp('getWarga');
             const dataWarga = resWarga.data || [];
@@ -1603,8 +1659,8 @@
                         </td>
                         ${currentUser.role === 'admin' ? `
                         <td class="p-3 text-center align-top opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                            <button onclick="window.editTransaksiPinjaman('${p.id}')" class="text-blue-500 bg-blue-50 p-1.5 rounded mr-1"><i class="fas fa-edit"></i></button>
-                            <button onclick="window.deleteTransaksiPinjaman('${p.id}', '${nama}', '${noRumah}')" class="text-red-500 bg-red-50 p-1.5 rounded"><i class="fas fa-trash-alt"></i></button>
+                            <button onclick="window.editTransaksiPinjaman('${p.id}')" class="text-blue-500 bg-blue-50 p-1.5 rounded mr-1" title="Edit Transaksi ini"><i class="fas fa-edit"></i></button>
+                            <button onclick="window.deleteTransaksiPinjaman('${p.id}', '${nama}', '${noRumah}')" class="text-red-500 bg-red-50 p-1.5 rounded" title="Hapus Transaksi ini"><i class="fas fa-trash-alt"></i></button>
                         </td>` : ''}
                     </tr>
                 `; 
