@@ -108,12 +108,12 @@
                     <button type="submit" id="btn-login" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-0.5 transition-all duration-200 flex justify-center items-center">
                         <span>Masuk ke Sistem</span> <i class="fas fa-arrow-right ml-2 text-sm"></i>
                     </button>
-                    <button type="button" id="btn-install-pwa" onclick="window.installPWA()" class="hidden w-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold py-3.5 px-4 rounded-xl shadow-sm hover:bg-indigo-100 transition-all duration-200 flex justify-center items-center">
+                    <button type="button" id="btn-install-pwa" onclick="window.installPWA()" class="w-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold py-3.5 px-4 rounded-xl shadow-sm hover:bg-indigo-100 transition-all duration-200 flex justify-center items-center">
                         <i class="fas fa-download mr-2 text-lg"></i> Install Aplikasi ke HP
                     </button>
                 </div>
             </form>
-            <div class="mt-6 text-center text-xs text-gray-400 font-medium">&copy; 2026 RT 02 Smart - All Rights Reserved</div>
+            <div class="mt-6 text-center text-xs text-gray-400 font-medium">&copy; 2026 KUDEN - All Rights Reserved</div>
         </div>
     </div>
 
@@ -182,7 +182,9 @@
         // ==========================================
         // KONFIGURASI APLIKASI
         // ==========================================
+        // UBAH IS_PREVIEW KE false JIKA AKAN DI-DEPLOY KE BLOGGER
         const IS_PREVIEW = false; 
+        const GAS_URL = "URL_DEPLOY_GAS_ANDA_DISINI";
         const LOGIN_LOGO_URL = "https://lh3.googleusercontent.com/d/1wKyoV-zibsYTg0ceIBZlVkZnA9ZkuJnE"; 
 
         const firebaseConfig = {
@@ -291,6 +293,8 @@
                     if (choiceResult.outcome === 'accepted') document.getElementById('btn-install-pwa').classList.add('hidden');
                     deferredPrompt = null;
                 });
+            } else {
+                window.showToast("Buka link sistem ini di browser HP (Chrome/Safari) untuk bisa diinstal ke layar utama.", "info");
             }
         };
 
@@ -432,6 +436,9 @@
                                 const surat = dbSurat.find(s => s.id === payload.id);
                                 if(surat) surat.status = payload.status;
                                 break;
+                            case 'deleteSurat':
+                                dbSurat = dbSurat.filter(x => String(x.id) !== String(payload.id));
+                                break;
                             case 'getPinjaman': res.data = dbPinjaman; break;
                             case 'addPinjaman': dbPinjaman.push(payload.data); break;
                             case 'updatePinjaman':
@@ -443,7 +450,6 @@
                                 break;
                             case 'updatePeminjamGlobal':
                                 dbPinjaman.forEach(p => { 
-                                    // Perbaikan: Mencocokkan dengan field 'namaPeminjam' atau 'peminjam' (data dummy awal)
                                     const namaP = p.namaPeminjam || p.peminjam;
                                     if (namaP === payload.oldNama && p.blok === payload.oldBlok) { 
                                         p.namaPeminjam = payload.newNama; 
@@ -453,7 +459,6 @@
                                 });
                                 break;
                             case 'deletePeminjamGlobal':
-                                // Perbaikan: Mencocokkan dengan field 'namaPeminjam' atau 'peminjam'
                                 dbPinjaman = dbPinjaman.filter(p => {
                                     const namaP = p.namaPeminjam || p.peminjam;
                                     return !(namaP === payload.nama && p.blok === payload.blok);
@@ -508,7 +513,7 @@
                     }, 300); 
                 });
             } else {
-                // LOGIKA FIREBASE ASLI (Singkat)
+                // LOGIKA GAS/FIREBASE ASLI (Singkat untuk template)
                 let res = { success: true, data: null, message: "" };
                 try {
                     const getCol = async (colName) => { const snap = await db.collection(colName).get(); return snap.docs.map(d => ({id: d.id, ...d.data()})); };
@@ -559,6 +564,7 @@
                         case 'getSurat': const suratAll = await getCol('Surat'); res.data = currentUser.role === 'warga' ? suratAll.filter(s => s.noRumah === currentUser.noRumah) : suratAll; break;
                         case 'addSurat': payload.data.id = payload.data.id || 'S' + Date.now(); await db.collection('Surat').doc(payload.data.id).set(payload.data); break;
                         case 'updateSuratStatus': await db.collection('Surat').doc(payload.id).update({ status: payload.status }); break;
+                        case 'deleteSurat': await db.collection('Surat').doc(payload.id).delete(); break;
                         case 'getPinjaman': res.data = await getCol('Pinjaman'); break;
                         case 'addPinjaman': payload.data.id = payload.data.id || 'PJ' + Date.now(); await db.collection('Pinjaman').doc(payload.data.id).set(payload.data); break;
                         case 'updatePinjaman': await db.collection('Pinjaman').doc(payload.id).update(payload.data); break;
@@ -2263,7 +2269,7 @@
                                             <div class="font-bold text-gray-800">${s.pemohon}</div>
                                             <div class="text-xs text-gray-500">Blok: ${s.noRumah}</div>
                                         </td>
-                                        <td class="p-4 text-gray-700 bg-gray-50/30 rounded-lg m-2 border border-transparent whitespace-pre-wrap">${s.keperluan}</td>
+                                        <td class="p-4 align-top"><div class="text-gray-700 bg-gray-50 p-3.5 rounded-xl border border-gray-100 whitespace-pre-wrap text-sm leading-relaxed">${s.keperluan}</div></td>
                                         <td class="p-4 text-center align-top">
                                             <span class="text-[10px] font-bold px-3 py-1 rounded-full ${s.status === 'Selesai' ? 'bg-green-100 text-green-700' : s.status === 'Dibaca' ? 'bg-blue-100 text-blue-700' : 'bg-rose-100 text-rose-700 animate-pulse'} shadow-sm">
                                                 ${s.status}
@@ -2271,8 +2277,9 @@
                                         </td>
                                         ${currentUser.role === 'admin' ? `
                                         <td class="p-4 text-center align-top">
-                                            ${s.status === 'Menunggu' ? `<button onclick="window.updateSurat('${s.id}', 'Dibaca')" class="text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded text-xs font-bold mb-1 w-full border border-blue-200 transition">Tandai Dibaca</button>` : ''}
-                                            ${s.status !== 'Selesai' ? `<button onclick="window.updateSurat('${s.id}', 'Selesai')" class="text-green-600 bg-green-50 hover:bg-green-100 px-3 py-1 rounded text-xs font-bold w-full border border-green-200 transition"><i class="fas fa-check mr-1"></i> Selesai</button>` : ''}
+                                            ${s.status === 'Menunggu' ? `<button onclick="window.updateSurat('${s.id}', 'Dibaca')" class="text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold mb-1.5 w-full border border-blue-200 transition">Tandai Dibaca</button>` : ''}
+                                            ${s.status !== 'Selesai' ? `<button onclick="window.updateSurat('${s.id}', 'Selesai')" class="text-green-600 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg text-xs font-bold w-full border border-green-200 transition"><i class="fas fa-check mr-1"></i> Selesai</button>` : ''}
+                                            ${s.status === 'Selesai' ? `<button onclick="window.deleteSurat('${s.id}')" class="text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg text-xs font-bold w-full border border-red-200 transition"><i class="fas fa-trash-alt mr-1"></i> Hapus</button>` : ''}
                                         </td>` : ''}
                                     </tr>
                                 `).join('')}
@@ -2298,6 +2305,14 @@
             window.showToast("Memperbarui status...", "info");
             const res = await window.fetchApp('updateSuratStatus', { id: id, status: status });
             if (res.success) { window.loadMenu('kritik'); } else { window.showToast(res.message, 'error'); }
+        };
+
+        window.deleteSurat = function(id) {
+            window.showConfirmModal("Hapus Pesan", "Yakin ingin menghapus pesan ini dari riwayat?", () => {
+                window.fetchApp('deleteSurat', { id: String(id) }).then(res => { 
+                    if (res.success) { window.showToast("Pesan dihapus!", "success"); window.loadMenu('kritik'); } 
+                });
+            });
         };
 
         // ==========================================
