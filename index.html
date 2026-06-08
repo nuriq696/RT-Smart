@@ -108,6 +108,7 @@
                     <button type="submit" id="btn-login" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-0.5 transition-all duration-200 flex justify-center items-center">
                         <span>Masuk ke Sistem</span> <i class="fas fa-arrow-right ml-2 text-sm"></i>
                     </button>
+                    <!-- Tombol Install PWA dinamis -->
                     <button type="button" id="btn-install-pwa" onclick="window.installPWA()" class="hidden w-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold py-3.5 px-4 rounded-xl shadow-sm hover:bg-indigo-100 transition-all duration-200 flex justify-center items-center">
                         <i class="fas fa-download mr-2 text-lg"></i> Install Aplikasi ke HP
                     </button>
@@ -182,8 +183,7 @@
         // ==========================================
         // KONFIGURASI APLIKASI
         // ==========================================
-        // UBAH IS_PREVIEW KE false JIKA AKAN DI-DEPLOY KE BLOGGER
-        const IS_PREVIEW = false; 
+        const IS_PREVIEW = fale; 
         const GAS_URL = "URL_DEPLOY_GAS_ANDA_DISINI";
         const LOGIN_LOGO_URL = "https://lh3.googleusercontent.com/d/1wKyoV-zibsYTg0ceIBZlVkZnA9ZkuJnE"; 
 
@@ -227,7 +227,8 @@
             { id: "P1", tanggal: "2026-05-28", judul: "Kerja Bakti Rutin", isiPengumuman: "Diberitahukan kepada seluruh warga untuk kerja bakti.", pembuat: "Bapak Ketua RT" }
         ];
         let dbSurat = [
-            { id: "S1", tanggal: "2026-06-03", noRumah: "A-01", pemohon: "Budi Santoso", jenisSurat: "Laporan", keperluan: "Lampu jalan di depan rumah A-01 mati.", status: "Menunggu" }
+            { id: "S1", tanggal: "2026-06-03", noRumah: "A-01", pemohon: "Budi Santoso", jenisSurat: "Laporan", keperluan: "Lampu jalan di depan rumah A-01 mati.\nMohon segera diperbaiki agar terang.", status: "Selesai" },
+            { id: "S2", tanggal: "2026-06-05", noRumah: "B-02", pemohon: "Eko Prasetyo", jenisSurat: "Saran", keperluan: "Saran untuk mengadakan senam pagi rutin setiap hari minggu di lapangan RT.", status: "Menunggu" }
         ];
         let dbSlider = [
             { id: "SL1", url: "https://images.unsplash.com/photo-1449844908441-8829872d2607?q=80&w=1200&auto=format&fit=crop", filename: "lingkungan.jpg", pitutur: "Urip Iku Urup", arti: "Hidup itu hendaknya memberi manfaat" }
@@ -262,6 +263,21 @@
         // ==========================================
         let deferredPrompt;
         window.initPWA = function() {
+            // Injeksi Manifest Dinamis
+            const manifestData = {
+                "name": "RT 02 Smart",
+                "short_name": "RT 02 Smart",
+                "start_url": window.location.href,
+                "display": "standalone",
+                "background_color": "#ffffff",
+                "theme_color": "#1e3a8a",
+                "icons": [{"src": "https://lh3.googleusercontent.com/d/1wKyoV-zibsYTg0ceIBZlVkZnA9ZkuJnE", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}]
+            };
+            const manifestBlob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
+            const manifestLink = document.getElementById('manifest-link');
+            if (manifestLink) manifestLink.setAttribute('href', URL.createObjectURL(manifestBlob));
+
+            // Service Worker
             if ('serviceWorker' in navigator) {
                 try {
                     const swCode = `
@@ -279,18 +295,14 @@
             }
 
             const installBtn = document.getElementById('btn-install-pwa');
-            // Cek apakah mode PWA Standalone (Sudah Di-install)
+            // Cek mode Standalone
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-            // Deteksi perangkat iOS
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
             if (!isStandalone) {
-                // Khusus iOS (Safari), karena tidak memicu beforeinstallprompt, kita paksa tombol muncul
-                if (isIOS && installBtn) {
-                    installBtn.classList.remove('hidden');
-                }
+                // Munculkan tombol jika belum standalone
+                if (installBtn) installBtn.classList.remove('hidden');
 
-                // Untuk Android / Chrome
                 window.addEventListener('beforeinstallprompt', (e) => {
                     e.preventDefault();
                     deferredPrompt = e;
@@ -298,7 +310,6 @@
                 });
             }
 
-            // Jika aplikasi berhasil diinstal, langsung hilangkan tombol
             window.addEventListener('appinstalled', () => {
                 deferredPrompt = null;
                 if (installBtn) installBtn.classList.add('hidden');
@@ -308,19 +319,15 @@
 
         window.installPWA = function() {
             if (deferredPrompt) {
-                // Munculkan dialog native penginstalan (Untuk Android / Chrome)
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        document.getElementById('btn-install-pwa').classList.add('hidden');
-                    }
+                    if (choiceResult.outcome === 'accepted') document.getElementById('btn-install-pwa').classList.add('hidden');
                     deferredPrompt = null;
                 });
             } else {
-                // Panduan khusus jika Prompt otomatis diblokir sistem browser/iOS
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
                 if (isIOS) {
-                    window.showToast("📱 Untuk iPhone/iPad: Ketuk ikon Share (Bagikan) di bawah browser, lalu pilih 'Add to Home Screen' (Tambah ke Layar Utama).", "info");
+                    window.showToast("📱 Untuk iPhone: Ketuk ikon Share di bawah browser, lalu pilih 'Add to Home Screen'.", "info");
                 } else {
                     window.showToast("Buka menu browser (titik tiga) lalu pilih 'Install Aplikasi' atau 'Tambahkan ke Layar Utama'.", "info");
                 }
@@ -364,7 +371,6 @@
             const btnCancel = document.getElementById('btn-confirm-cancel');
             const btnOk = document.getElementById('btn-confirm-ok');
             
-            // Hapus event listener lama
             const newBtnCancel = btnCancel.cloneNode(true);
             const newBtnOk = btnOk.cloneNode(true);
             btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
@@ -459,14 +465,16 @@
                                 break;
                             case 'getPengumuman': res.data = dbPengumuman; break;
                             case 'addPengumuman': dbPengumuman.push(payload.data); break;
+                            case 'deletePengumuman': 
+                                dbPengumuman = dbPengumuman.filter(p => String(p.id) !== String(payload.id)); break;
                             case 'getSurat': res.data = currentUser.role === 'warga' ? dbSurat.filter(s => s.noRumah === currentUser.noRumah) : dbSurat; break;
                             case 'addSurat': dbSurat.push(payload.data); break;
                             case 'updateSuratStatus':
                                 const surat = dbSurat.find(s => s.id === payload.id);
                                 if(surat) surat.status = payload.status;
                                 break;
-                            case 'deleteSurat':
-                                dbSurat = dbSurat.filter(x => String(x.id) !== String(payload.id));
+                            case 'deleteSurat': // FITUR DELETE SURAT
+                                dbSurat = dbSurat.filter(s => String(s.id) !== String(payload.id));
                                 break;
                             case 'getPinjaman': res.data = dbPinjaman; break;
                             case 'addPinjaman': dbPinjaman.push(payload.data); break;
@@ -542,7 +550,7 @@
                     }, 300); 
                 });
             } else {
-                // LOGIKA GAS/FIREBASE ASLI (Singkat untuk template)
+                // LOGIKA FIREBASE ASLI (Singkat untuk template)
                 let res = { success: true, data: null, message: "" };
                 try {
                     const getCol = async (colName) => { const snap = await db.collection(colName).get(); return snap.docs.map(d => ({id: d.id, ...d.data()})); };
@@ -590,6 +598,7 @@
                         case 'deleteKeuangan': await db.collection('Keuangan').doc(payload.id).delete(); break;
                         case 'getPengumuman': res.data = await getCol('Pengumuman'); break;
                         case 'addPengumuman': payload.data.id = payload.data.id || 'P' + Date.now(); await db.collection('Pengumuman').doc(payload.data.id).set(payload.data); break;
+                        case 'deletePengumuman': await db.collection('Pengumuman').doc(payload.id).delete(); break;
                         case 'getSurat': const suratAll = await getCol('Surat'); res.data = currentUser.role === 'warga' ? suratAll.filter(s => s.noRumah === currentUser.noRumah) : suratAll; break;
                         case 'addSurat': payload.data.id = payload.data.id || 'S' + Date.now(); await db.collection('Surat').doc(payload.data.id).set(payload.data); break;
                         case 'updateSuratStatus': await db.collection('Surat').doc(payload.id).update({ status: payload.status }); break;
@@ -605,7 +614,7 @@
                                 if (namaP === payload.oldNama && p.blok === payload.oldBlok) { 
                                     await db.collection('Pinjaman').doc(p.id).update({ 
                                         namaPeminjam: payload.newNama, 
-                                        peminjam: payload.newNama, // Update field legacy
+                                        peminjam: payload.newNama, 
                                         blok: payload.newBlok 
                                     }); 
                                 } 
@@ -1252,12 +1261,10 @@
                             let tglRaw = r.tanggalLahir;
                             if(tglRaw) {
                                 if(typeof tglRaw === 'number' || (!isNaN(tglRaw) && String(tglRaw).trim() !== '')) {
-                                    // Mengonversi Nomor Seri Excel menjadi Tanggal ISO (YYYY-MM-DD)
                                     const serial = Number(tglRaw);
                                     const jsDate = new Date(Math.round((serial - 25569) * 86400 * 1000));
                                     parsedTgl = jsDate.toISOString().split('T')[0];
                                 } else if (typeof tglRaw === 'string') {
-                                    // Memperbaiki format string seperti DD/MM/YYYY atau DD-MM-YYYY menjadi YYYY-MM-DD
                                     const parts = tglRaw.split(/[\/\-]/);
                                     if (parts.length === 3) {
                                         if (parts[2].length === 4) parsedTgl = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
@@ -1450,7 +1457,6 @@
             const res = await window.fetchApp('getPinjaman');
             let data = res.data || [];
 
-            // Standarisasi field nama peminjam antara data dummy lama ('peminjam') dan input baru ('namaPeminjam')
             data = data.map(item => {
                 if(!item.namaPeminjam && item.peminjam) item.namaPeminjam = item.peminjam;
                 if(!item.noRumah && item.blok) item.noRumah = item.blok;
@@ -2298,7 +2304,9 @@
                                             <div class="font-bold text-gray-800">${s.pemohon}</div>
                                             <div class="text-xs text-gray-500">Blok: ${s.noRumah}</div>
                                         </td>
-                                        <td class="p-4 align-top"><div class="text-gray-700 bg-gray-50 p-3.5 rounded-xl border border-gray-100 whitespace-pre-wrap text-sm leading-relaxed">${s.keperluan}</div></td>
+                                        <td class="p-4 align-top">
+                                            <div class="text-gray-700 bg-gray-50/80 p-3 rounded-lg border border-gray-100 whitespace-pre-wrap leading-relaxed">${s.keperluan}</div>
+                                        </td>
                                         <td class="p-4 text-center align-top">
                                             <span class="text-[10px] font-bold px-3 py-1 rounded-full ${s.status === 'Selesai' ? 'bg-green-100 text-green-700' : s.status === 'Dibaca' ? 'bg-blue-100 text-blue-700' : 'bg-rose-100 text-rose-700 animate-pulse'} shadow-sm">
                                                 ${s.status}
@@ -2306,7 +2314,7 @@
                                         </td>
                                         ${currentUser.role === 'admin' ? `
                                         <td class="p-4 text-center align-top">
-                                            ${s.status === 'Menunggu' ? `<button onclick="window.updateSurat('${s.id}', 'Dibaca')" class="text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold mb-1.5 w-full border border-blue-200 transition">Tandai Dibaca</button>` : ''}
+                                            ${s.status === 'Menunggu' ? `<button onclick="window.updateSurat('${s.id}', 'Dibaca')" class="text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold mb-1 w-full border border-blue-200 transition">Tandai Dibaca</button>` : ''}
                                             ${s.status !== 'Selesai' ? `<button onclick="window.updateSurat('${s.id}', 'Selesai')" class="text-green-600 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg text-xs font-bold w-full border border-green-200 transition"><i class="fas fa-check mr-1"></i> Selesai</button>` : ''}
                                             ${s.status === 'Selesai' ? `<button onclick="window.deleteSurat('${s.id}')" class="text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg text-xs font-bold w-full border border-red-200 transition"><i class="fas fa-trash-alt mr-1"></i> Hapus</button>` : ''}
                                         </td>` : ''}
@@ -2337,9 +2345,9 @@
         };
 
         window.deleteSurat = function(id) {
-            window.showConfirmModal("Hapus Pesan", "Yakin ingin menghapus pesan ini dari riwayat?", () => {
-                window.fetchApp('deleteSurat', { id: String(id) }).then(res => { 
-                    if (res.success) { window.showToast("Pesan dihapus!", "success"); window.loadMenu('kritik'); } 
+            window.showConfirmModal("Hapus Pesan", "Yakin ingin menghapus pesan ini secara permanen?", () => {
+                window.fetchApp('deleteSurat', { id: String(id) }).then(res => {
+                    if (res.success) { window.showToast("Pesan dihapus!"); window.loadMenu('kritik'); }
                 });
             });
         };
