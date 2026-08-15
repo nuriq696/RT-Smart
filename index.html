@@ -82,7 +82,7 @@
                 <div id="login-logo-container" class="w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-2xl mx-auto flex items-center justify-center text-white text-4xl shadow-lg mb-4 transform rotate-3">
                     <i id="login-logo-icon" class="fas fa-city -rotate-3"></i>
                 </div>
-                <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">RT 02 Smart</h1>
+                <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">KUDEN</h1>
                 <p class="text-sm text-gray-500 mt-2 font-medium">Sistem Informasi Manajemen Warga</p>
             </div>
             
@@ -104,15 +104,12 @@
                         </div>
                     </div>
                 </div>
-                <div class="space-y-3 pt-2">
-                    <button type="submit" id="btn-login" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-0.5 transition-all duration-200 flex justify-center items-center">
-                        <span>Masuk ke Sistem</span> <i class="fas fa-arrow-right ml-2 text-sm"></i>
-                    </button>
-                    <!-- Tombol Install PWA dinamis -->
-                    <button type="button" id="btn-install-pwa" onclick="window.installPWA()" class="hidden w-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold py-3.5 px-4 rounded-xl shadow-sm hover:bg-indigo-100 transition-all duration-200 flex justify-center items-center">
-                        <i class="fas fa-download mr-2 text-lg"></i> Install Aplikasi ke HP
-                    </button>
-                </div>
+                <button type="submit" id="btn-login" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-0.5 transition-all duration-200 flex justify-center items-center">
+                    <span>Masuk ke Sistem</span> <i class="fas fa-arrow-right ml-2 text-sm"></i>
+                </button>
+                <button type="button" id="btn-install-pwa" onclick="window.installPWA()" class="hidden w-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold py-3.5 px-4 rounded-xl shadow-sm hover:bg-indigo-100 transition-all duration-200 flex justify-center items-center mt-3">
+                    <i class="fas fa-download mr-2 text-lg"></i> Install Aplikasi ke HP
+                </button>
             </form>
             <div class="mt-6 text-center text-xs text-gray-400 font-medium">&copy; 2026 KUDEN - All Rights Reserved</div>
         </div>
@@ -127,7 +124,7 @@
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-xl backdrop-blur-sm shadow-inner"><i class="fas fa-city text-blue-300"></i></div>
                     <div>
-                        <h2 class="text-xl font-bold tracking-tight">RT 02 Smart</h2>
+                        <h2 class="text-xl font-bold tracking-tight">KUDEN</h2>
                         <div class="text-[10px] text-indigo-300 uppercase tracking-widest font-semibold" id="user-role-badge">Admin</div>
                     </div>
                 </div>
@@ -184,7 +181,6 @@
         // KONFIGURASI APLIKASI
         // ==========================================
         const IS_PREVIEW = false; 
-        const GAS_URL = "URL_DEPLOY_GAS_ANDA_DISINI";
         const LOGIN_LOGO_URL = "https://lh3.googleusercontent.com/d/1wKyoV-zibsYTg0ceIBZlVkZnA9ZkuJnE"; 
 
         const firebaseConfig = {
@@ -195,7 +191,7 @@
   messagingSenderId: "1014599613590",
   appId: "1:1014599613590:web:d2534dfd808bce864156b7",
   measurementId: "G-524J4ZLS9Z"
-};
+        };
 
         let db;
         if (!IS_PREVIEW) {
@@ -227,8 +223,7 @@
             { id: "P1", tanggal: "2026-05-28", judul: "Kerja Bakti Rutin", isiPengumuman: "Diberitahukan kepada seluruh warga untuk kerja bakti.", pembuat: "Bapak Ketua RT" }
         ];
         let dbSurat = [
-            { id: "S1", tanggal: "2026-06-03", noRumah: "A-01", pemohon: "Budi Santoso", jenisSurat: "Laporan", keperluan: "Lampu jalan di depan rumah A-01 mati.\nMohon segera diperbaiki agar terang.", status: "Selesai" },
-            { id: "S2", tanggal: "2026-06-05", noRumah: "B-02", pemohon: "Eko Prasetyo", jenisSurat: "Saran", keperluan: "Saran untuk mengadakan senam pagi rutin setiap hari minggu di lapangan RT.", status: "Menunggu" }
+            { id: "S1", tanggal: "2026-06-03", noRumah: "A-01", pemohon: "Budi Santoso", jenisSurat: "Laporan", keperluan: "Lampu jalan di depan rumah A-01 mati.", status: "Menunggu" }
         ];
         let dbSlider = [
             { id: "SL1", url: "https://images.unsplash.com/photo-1449844908441-8829872d2607?q=80&w=1200&auto=format&fit=crop", filename: "lingkungan.jpg", pitutur: "Urip Iku Urup", arti: "Hidup itu hendaknya memberi manfaat" }
@@ -263,21 +258,6 @@
         // ==========================================
         let deferredPrompt;
         window.initPWA = function() {
-            // Injeksi Manifest Dinamis
-            const manifestData = {
-                "name": "RT 02 Smart",
-                "short_name": "RT 02 Smart",
-                "start_url": window.location.href,
-                "display": "standalone",
-                "background_color": "#ffffff",
-                "theme_color": "#1e3a8a",
-                "icons": [{"src": "https://lh3.googleusercontent.com/d/1wKyoV-zibsYTg0ceIBZlVkZnA9ZkuJnE", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}]
-            };
-            const manifestBlob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
-            const manifestLink = document.getElementById('manifest-link');
-            if (manifestLink) manifestLink.setAttribute('href', URL.createObjectURL(manifestBlob));
-
-            // Service Worker
             if ('serviceWorker' in navigator) {
                 try {
                     const swCode = `
@@ -294,26 +274,11 @@
                 } catch (e) { console.log("PWA gagal diinisiasi.", e); }
             }
 
-            const installBtn = document.getElementById('btn-install-pwa');
-            // Cek mode Standalone
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-            if (!isStandalone) {
-                // Munculkan tombol jika belum standalone
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                const installBtn = document.getElementById('btn-install-pwa');
                 if (installBtn) installBtn.classList.remove('hidden');
-
-                window.addEventListener('beforeinstallprompt', (e) => {
-                    e.preventDefault();
-                    deferredPrompt = e;
-                    if (installBtn) installBtn.classList.remove('hidden');
-                });
-            }
-
-            window.addEventListener('appinstalled', () => {
-                deferredPrompt = null;
-                if (installBtn) installBtn.classList.add('hidden');
-                window.showToast("Aplikasi berhasil diinstal!", "success");
             });
         };
 
@@ -324,13 +289,6 @@
                     if (choiceResult.outcome === 'accepted') document.getElementById('btn-install-pwa').classList.add('hidden');
                     deferredPrompt = null;
                 });
-            } else {
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-                if (isIOS) {
-                    window.showToast("📱 Untuk iPhone: Ketuk ikon Share di bawah browser, lalu pilih 'Add to Home Screen'.", "info");
-                } else {
-                    window.showToast("Buka menu browser (titik tiga) lalu pilih 'Install Aplikasi' atau 'Tambahkan ke Layar Utama'.", "info");
-                }
             }
         };
 
@@ -371,6 +329,7 @@
             const btnCancel = document.getElementById('btn-confirm-cancel');
             const btnOk = document.getElementById('btn-confirm-ok');
             
+            // Hapus event listener lama
             const newBtnCancel = btnCancel.cloneNode(true);
             const newBtnOk = btnOk.cloneNode(true);
             btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
@@ -465,16 +424,11 @@
                                 break;
                             case 'getPengumuman': res.data = dbPengumuman; break;
                             case 'addPengumuman': dbPengumuman.push(payload.data); break;
-                            case 'deletePengumuman': 
-                                dbPengumuman = dbPengumuman.filter(p => String(p.id) !== String(payload.id)); break;
                             case 'getSurat': res.data = currentUser.role === 'warga' ? dbSurat.filter(s => s.noRumah === currentUser.noRumah) : dbSurat; break;
                             case 'addSurat': dbSurat.push(payload.data); break;
                             case 'updateSuratStatus':
                                 const surat = dbSurat.find(s => s.id === payload.id);
                                 if(surat) surat.status = payload.status;
-                                break;
-                            case 'deleteSurat': // FITUR DELETE SURAT
-                                dbSurat = dbSurat.filter(s => String(s.id) !== String(payload.id));
                                 break;
                             case 'getPinjaman': res.data = dbPinjaman; break;
                             case 'addPinjaman': dbPinjaman.push(payload.data); break;
@@ -486,20 +440,10 @@
                                 dbPinjaman = dbPinjaman.filter(x => String(x.id) !== String(payload.id));
                                 break;
                             case 'updatePeminjamGlobal':
-                                dbPinjaman.forEach(p => { 
-                                    const namaP = p.namaPeminjam || p.peminjam;
-                                    if (namaP === payload.oldNama && p.blok === payload.oldBlok) { 
-                                        p.namaPeminjam = payload.newNama; 
-                                        p.peminjam = payload.newNama; // update juga field legacy
-                                        p.blok = payload.newBlok; 
-                                    } 
-                                });
+                                dbPinjaman.forEach(p => { if (p.peminjam === payload.oldNama && p.blok === payload.oldBlok) { p.peminjam = payload.newNama; p.blok = payload.newBlok; } });
                                 break;
                             case 'deletePeminjamGlobal':
-                                dbPinjaman = dbPinjaman.filter(p => {
-                                    const namaP = p.namaPeminjam || p.peminjam;
-                                    return !(namaP === payload.nama && p.blok === payload.blok);
-                                });
+                                dbPinjaman = dbPinjaman.filter(p => !(p.peminjam === payload.nama && p.blok === payload.blok));
                                 break;
                             case 'getInventaris': res.data = dbInventaris; break;
                             case 'addInventaris': dbInventaris.push(payload.data); break;
@@ -550,7 +494,7 @@
                     }, 300); 
                 });
             } else {
-                // LOGIKA FIREBASE ASLI (Singkat untuk template)
+                // LOGIKA FIREBASE ASLI (Singkat)
                 let res = { success: true, data: null, message: "" };
                 try {
                     const getCol = async (colName) => { const snap = await db.collection(colName).get(); return snap.docs.map(d => ({id: d.id, ...d.data()})); };
@@ -598,36 +542,20 @@
                         case 'deleteKeuangan': await db.collection('Keuangan').doc(payload.id).delete(); break;
                         case 'getPengumuman': res.data = await getCol('Pengumuman'); break;
                         case 'addPengumuman': payload.data.id = payload.data.id || 'P' + Date.now(); await db.collection('Pengumuman').doc(payload.data.id).set(payload.data); break;
-                        case 'deletePengumuman': await db.collection('Pengumuman').doc(payload.id).delete(); break;
                         case 'getSurat': const suratAll = await getCol('Surat'); res.data = currentUser.role === 'warga' ? suratAll.filter(s => s.noRumah === currentUser.noRumah) : suratAll; break;
                         case 'addSurat': payload.data.id = payload.data.id || 'S' + Date.now(); await db.collection('Surat').doc(payload.data.id).set(payload.data); break;
                         case 'updateSuratStatus': await db.collection('Surat').doc(payload.id).update({ status: payload.status }); break;
-                        case 'deleteSurat': await db.collection('Surat').doc(payload.id).delete(); break;
                         case 'getPinjaman': res.data = await getCol('Pinjaman'); break;
                         case 'addPinjaman': payload.data.id = payload.data.id || 'PJ' + Date.now(); await db.collection('Pinjaman').doc(payload.data.id).set(payload.data); break;
                         case 'updatePinjaman': await db.collection('Pinjaman').doc(payload.id).update(payload.data); break;
                         case 'deletePinjaman': await db.collection('Pinjaman').doc(payload.id).delete(); break;
                         case 'updatePeminjamGlobal':
                             const pjList = await getCol('Pinjaman');
-                            for(let p of pjList) { 
-                                const namaP = p.namaPeminjam || p.peminjam;
-                                if (namaP === payload.oldNama && p.blok === payload.oldBlok) { 
-                                    await db.collection('Pinjaman').doc(p.id).update({ 
-                                        namaPeminjam: payload.newNama, 
-                                        peminjam: payload.newNama, 
-                                        blok: payload.newBlok 
-                                    }); 
-                                } 
-                            }
+                            for(let p of pjList) { if (p.peminjam === payload.oldNama && p.blok === payload.oldBlok) { await db.collection('Pinjaman').doc(p.id).update({ peminjam: payload.newNama, blok: payload.newBlok }); } }
                             break;
                         case 'deletePeminjamGlobal':
                             const pjDelList = await getCol('Pinjaman');
-                            for(let p of pjDelList) { 
-                                const namaP = p.namaPeminjam || p.peminjam;
-                                if (namaP === payload.nama && p.blok === payload.blok) { 
-                                    await db.collection('Pinjaman').doc(p.id).delete(); 
-                                } 
-                            }
+                            for(let p of pjDelList) { if (p.peminjam === payload.nama && p.blok === payload.blok) { await db.collection('Pinjaman').doc(p.id).delete(); } }
                             break;
                         case 'getInventaris': res.data = await getCol('Inventaris'); break;
                         case 'addInventaris': payload.data.id = payload.data.id || 'INV' + Date.now(); await db.collection('Inventaris').doc(payload.data.id).set(payload.data); break;
@@ -785,7 +713,7 @@
                                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-6 md:p-8 pointer-events-none">
                                             <div class="text-white drop-shadow-md">
                                                 <h2 class="text-2xl md:text-3xl font-bold mb-1 font-serif text-amber-400 italic">Selamat Datang, ${currentUser.nama}!</h2>
-                                                <p class="text-gray-200 text-sm md:text-base">Sistem Informasi Manajemen RT 02 Smart</p>
+                                                <p class="text-gray-200 text-sm md:text-base">Sistem Informasi Manajemen KUDEN</p>
                                             </div>
                                         </div>
                                     </div>`).join('')
@@ -876,7 +804,7 @@
                                         <img src="${s.url}" class="w-full h-full object-cover brightness-75">
                                         <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex items-end p-6 md:p-10 pointer-events-none">
                                             <div class="text-white drop-shadow-xl max-w-3xl">
-                                                ${s.pitutur ? `<h2 class="text-xl md:text-3xl font-bold mb-2 font-serif text-amber-400 italic tracking-wide">"${s.pitutur}"</h2><p class="text-gray-200 text-xs md:text-sm border-l-4 border-amber-500 pl-3 font-medium opacity-90">${s.arti}</p>` : `<h2 class="text-2xl md:text-3xl font-bold mb-1">Lingkungan RT 02 Smart</h2><p class="text-gray-200 text-sm md:text-base">Informasi dan Kegiatan Warga</p>`}
+                                                ${s.pitutur ? `<h2 class="text-xl md:text-3xl font-bold mb-2 font-serif text-amber-400 italic tracking-wide">"${s.pitutur}"</h2><p class="text-gray-200 text-xs md:text-sm border-l-4 border-amber-500 pl-3 font-medium opacity-90">${s.arti}</p>` : `<h2 class="text-2xl md:text-3xl font-bold mb-1">Lingkungan KUDEN</h2><p class="text-gray-200 text-sm md:text-base">Informasi dan Kegiatan Warga</p>`}
                                             </div>
                                         </div>
                                     </div>`).join('')
@@ -1004,10 +932,81 @@
                     <!-- TABEL DATA WARGA -->
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         <div class="p-5 border-b border-gray-100 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-gray-50/50">
-                            <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-list text-indigo-500 mr-2"></i>Database Warga</h3>
+                            
+                            <!-- KIRI: Judul dan Tombol Filter -->
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full xl:w-auto z-20">
+                                <h3 class="text-lg font-bold text-gray-800 whitespace-nowrap"><i class="fas fa-list text-indigo-500 mr-2"></i>Database Warga</h3>
+                                <div class="relative w-full sm:w-auto">
+                                    <button id="btn-filter-dropdown" onclick="document.getElementById('filter-dropdown-menu').classList.toggle('hidden')" class="w-full sm:w-auto flex items-center justify-between gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                                        <div class="flex items-center"><i class="fas fa-filter text-indigo-500 mr-2"></i> Filter <span id="filter-badge" class="ml-2 bg-indigo-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">${data.length} Data</span></div>
+                                        <i class="fas fa-chevron-down text-xs text-gray-400"></i>
+                                    </button>
+                                    
+                                    <!-- Dropdown Menu Filter -->
+                                    <div id="filter-dropdown-menu" class="hidden absolute left-0 mt-2 w-full sm:w-72 bg-white rounded-xl shadow-xl border border-gray-100 z-50 p-4">
+                                        <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
+                                            <h4 class="text-sm font-bold text-gray-700">Filter Data</h4>
+                                            <button onclick="window.resetFilterWarga()" class="text-xs text-red-500 hover:text-red-700 font-medium">Reset</button>
+                                        </div>
+                                        
+                                        <div class="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1">
+                                            <div>
+                                                <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Status & Gender</label>
+                                                <select id="filter-status" onchange="window.filterWarga()" class="w-full p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none mb-2">
+                                                    <option value="">Semua Status Keluarga</option>
+                                                    <option value="Kepala Keluarga">Kepala Keluarga</option>
+                                                </select>
+                                                <select id="filter-gender" onchange="window.filterWarga()" class="w-full p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                                    <option value="">Semua Jenis Kelamin</option>
+                                                    <option value="Laki-laki">Laki-laki</option>
+                                                    <option value="Perempuan">Perempuan</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div>
+                                                <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Kategori Usia</label>
+                                                <select id="filter-usia" onchange="window.filterWarga()" class="w-full p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                                    <option value="">Semua Usia</option>
+                                                    <option value="balita">Balita (0-5 thn)</option>
+                                                    <option value="anak">Anak (6-11 thn)</option>
+                                                    <option value="remaja">Remaja (12-25 thn)</option>
+                                                    <option value="dewasa">Dewasa (26-55 thn)</option>
+                                                    <option value="lansia">Lansia (>55 thn)</option>
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Pekerjaan</label>
+                                                <select id="filter-pekerjaan" onchange="window.filterWarga()" class="w-full p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                                    <option value="">Semua Pekerjaan</option>
+                                                    <option value="PNS / ASN">PNS / ASN</option>
+                                                    <option value="TNI / POLRI">TNI / POLRI</option>
+                                                    <option value="Karyawan Swasta">Karyawan Swasta</option>
+                                                    <option value="Wiraswasta">Wiraswasta</option>
+                                                    <option value="Buruh Harian Lepas">Buruh Harian Lepas</option>
+                                                    <option value="Pelajar/Mahasiswa">Pelajar / Mahasiswa</option>
+                                                    <option value="Mengurus Rumah Tangga">Ibu Rumah Tangga</option>
+                                                    <option value="Belum/Tidak Bekerja">Belum / Tidak Bekerja</option>
+                                                    <option value="Pensiunan">Pensiunan</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div>
+                                                <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Status Tinggal</label>
+                                                <select id="filter-tinggal" onchange="window.filterWarga()" class="w-full p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                                    <option value="">Semua Warga</option>
+                                                    <option value="Kontrak">Pengontrak</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- KANAN: Search & Action Buttons -->
                             <div class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
                                 <div class="relative w-full sm:w-64 flex-1">
-                                    <input type="text" id="search-warga" onkeyup="window.filterWarga()" placeholder="Cari nama atau NIK..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <input type="text" id="search-warga" oninput="window.filterWarga()" placeholder="Cari nama atau NIK..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                                     <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
                                 </div>
                                 ${currentUser.role === 'admin' ? `
@@ -1050,11 +1049,11 @@
                             <form id="form-warga" onsubmit="window.submitWarga(event)" class="space-y-4">
                                 <input type="hidden" id="w_id">
                                 <div class="grid grid-cols-2 gap-4">
-                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">No. KK</label><input type="text" id="w_kk" required class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"></div>
-                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">NIK</label><input type="text" id="w_nik" required class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"></div>
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">No. KK <span class="text-red-500">*</span></label><input type="text" id="w_kk" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"></div>
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">NIK <span class="text-red-500">*</span></label><input type="text" id="w_nik" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"></div>
                                 </div>
-                                <div><label class="block text-xs font-bold text-gray-600 mb-1">Nama Lengkap</label><input type="text" id="w_nama" required class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"></div>
-                                <div><label class="block text-xs font-bold text-gray-600 mb-1">Alamat Lengkap</label><input type="text" id="w_rumah" required placeholder="Contoh: Jl. Merdeka No. 10 RT 01" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"></div>
+                                <div><label class="block text-xs font-bold text-gray-600 mb-1">Nama Lengkap <span class="text-red-500">*</span></label><input type="text" id="w_nama" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"></div>
+                                <div><label class="block text-xs font-bold text-gray-600 mb-1">Alamat Lengkap <span class="text-red-500">*</span></label><input type="text" id="w_rumah" placeholder="Contoh: Jl. Merdeka No. 10 RT 01" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"></div>
                                 <div><label class="block text-xs font-bold text-gray-600 mb-1">Jenis Kelamin</label>
                                     <select id="w_jk" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
                                         <option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option>
@@ -1078,8 +1077,8 @@
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label class="block text-xs font-bold text-gray-600 mb-1">Pekerjaan</label>
-                                        <select id="w_pekerjaan" required class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
+                                        <label class="block text-xs font-bold text-gray-600 mb-1">Pekerjaan <span class="text-red-500">*</span></label>
+                                        <select id="w_pekerjaan" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
                                             <option value="" disabled selected>-- Pilih Pekerjaan --</option>
                                             <option value="Belum/Tidak Bekerja">Belum/Tidak Bekerja</option>
                                             <option value="Mengurus Rumah Tangga">Mengurus Rumah Tangga</option>
@@ -1161,10 +1160,95 @@
         };
 
         window.filterWarga = function() {
-            const term = document.getElementById('search-warga').value.toLowerCase();
-            const filtered = window.wargaList.filter(w => w.namaLengkap.toLowerCase().includes(term) || w.nik.includes(term));
-            document.getElementById('warga-tbody').innerHTML = window.generateWargaRows(filtered);
+            try {
+                const searchEl = document.getElementById('search-warga');
+                const term = searchEl ? searchEl.value.toLowerCase().trim() : '';
+                
+                const fStatus = document.getElementById('filter-status') ? document.getElementById('filter-status').value : '';
+                const fGender = document.getElementById('filter-gender') ? document.getElementById('filter-gender').value : '';
+                const fUsia = document.getElementById('filter-usia') ? document.getElementById('filter-usia').value : '';
+                const fPekerjaan = document.getElementById('filter-pekerjaan') ? document.getElementById('filter-pekerjaan').value : '';
+                const fTinggal = document.getElementById('filter-tinggal') ? document.getElementById('filter-tinggal').value : '';
+
+                const tahunIni = new Date().getFullYear();
+
+                if (!window.wargaList) return;
+
+                // 1. Lakukan pemfilteran array data warga
+                const filtered = window.wargaList.filter(w => {
+                    const nama = w.namaLengkap ? String(w.namaLengkap).toLowerCase() : '';
+                    const nik = w.nik ? String(w.nik).toLowerCase() : '';
+                    const rumah = w.noRumah ? String(w.noRumah).toLowerCase() : '';
+                    
+                    const matchSearch = (term === '') || nama.includes(term) || nik.includes(term) || rumah.includes(term);
+                    if (!matchSearch) return false;
+
+                    if (fStatus && w.statusKeluarga !== fStatus) return false;
+                    if (fGender && w.jenisKelamin !== fGender) return false;
+                    if (fPekerjaan && w.pekerjaan !== fPekerjaan) return false;
+                    if (fTinggal && w.statusTinggal !== fTinggal) return false;
+
+                    if (fUsia) {
+                        if (!w.tanggalLahir) return false;
+                        const thnLahir = new Date(w.tanggalLahir).getFullYear();
+                        if (isNaN(thnLahir)) return false;
+                        const umur = tahunIni - thnLahir;
+                        if (fUsia === 'balita' && umur > 5) return false;
+                        if (fUsia === 'anak' && (umur <= 5 || umur > 11)) return false;
+                        if (fUsia === 'remaja' && (umur <= 11 || umur > 25)) return false;
+                        if (fUsia === 'dewasa' && (umur <= 25 || umur > 55)) return false;
+                        if (fUsia === 'lansia' && umur <= 55) return false;
+                    }
+                    return true;
+                });
+
+                // 2. Tampilkan hasil di tabel HTML
+                const tbody = document.getElementById('warga-tbody');
+                if (tbody) tbody.innerHTML = window.generateWargaRows(filtered);
+
+                // 3. Update lencana (badge) dan tampilan tombol Filter
+                const badge = document.getElementById('filter-badge');
+                const btnDropdown = document.getElementById('btn-filter-dropdown');
+                
+                // Cek apakah ada aktivitas penyaringan (Search atau Filter)
+                let isFilterActive = term !== '' || fStatus !== '' || fGender !== '' || fUsia !== '' || fPekerjaan !== '' || fTinggal !== '';
+
+                if(badge && btnDropdown) {
+                    badge.innerText = filtered.length + " Data"; // Tampilkan jumlah hasil
+                    badge.classList.remove('hidden'); 
+                    
+                    // Beri efek sorotan jika tombol sedang digunakan
+                    if(isFilterActive) { 
+                        btnDropdown.classList.add('border-indigo-300', 'bg-indigo-50/30', 'text-indigo-700'); 
+                    } else { 
+                        btnDropdown.classList.remove('border-indigo-300', 'bg-indigo-50/30', 'text-indigo-700'); 
+                    }
+                }
+
+            } catch(e) {
+                console.error("Filter/Search Error:", e);
+            }
         };
+
+        window.resetFilterWarga = function() {
+            if(document.getElementById('filter-status')) document.getElementById('filter-status').value = '';
+            if(document.getElementById('filter-gender')) document.getElementById('filter-gender').value = '';
+            if(document.getElementById('filter-usia')) document.getElementById('filter-usia').value = '';
+            if(document.getElementById('filter-pekerjaan')) document.getElementById('filter-pekerjaan').value = '';
+            if(document.getElementById('filter-tinggal')) document.getElementById('filter-tinggal').value = '';
+            if(document.getElementById('search-warga')) document.getElementById('search-warga').value = '';
+            
+            window.filterWarga();
+            document.getElementById('filter-dropdown-menu').classList.add('hidden');
+        };
+
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('filter-dropdown-menu');
+            const btn = document.getElementById('btn-filter-dropdown');
+            if (dropdown && btn && !dropdown.classList.contains('hidden') && !dropdown.contains(event.target) && !btn.contains(event.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
 
         window.openModalTambahWarga = function() {
             document.getElementById('form-warga').reset();
@@ -1195,23 +1279,49 @@
 
         window.submitWarga = async function(e) {
             e.preventDefault();
+            
+            const noKk = document.getElementById('w_kk').value.trim();
+            const nik = document.getElementById('w_nik').value.trim();
+            const namaLengkap = document.getElementById('w_nama').value.trim();
+            const noRumah = document.getElementById('w_rumah').value.trim();
+            const pekerjaan = document.getElementById('w_pekerjaan').value;
+
+            if(!noKk || !nik || !namaLengkap || !noRumah || !pekerjaan) {
+                window.showToast("Gagal: Mohon lengkapi kolom yang bertanda bintang merah (*)", "error");
+                return;
+            }
+
             const btn = document.getElementById('btn-save-warga');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menyimpan...'; btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menyimpan...'; 
+            btn.disabled = true;
 
             const id = document.getElementById('w_id').value;
             const payload = {
-                noKk: document.getElementById('w_kk').value, nik: document.getElementById('w_nik').value,
-                namaLengkap: document.getElementById('w_nama').value, noRumah: document.getElementById('w_rumah').value,
-                jenisKelamin: document.getElementById('w_jk').value, tempatLahir: document.getElementById('w_tempatLahir').value,
-                tanggalLahir: document.getElementById('w_tglLahir').value, agama: "Islam", pekerjaan: document.getElementById('w_pekerjaan').value,
-                statusKeluarga: document.getElementById('w_status').value, statusTinggal: document.getElementById('w_tinggal').value, noHp: document.getElementById('w_hp').value
+                noKk: noKk, 
+                nik: nik,
+                namaLengkap: namaLengkap, 
+                noRumah: noRumah,
+                jenisKelamin: document.getElementById('w_jk').value, 
+                tempatLahir: document.getElementById('w_tempatLahir').value,
+                tanggalLahir: document.getElementById('w_tglLahir').value, 
+                agama: "Islam", 
+                pekerjaan: pekerjaan,
+                statusKeluarga: document.getElementById('w_status').value, 
+                statusTinggal: document.getElementById('w_tinggal').value, 
+                noHp: document.getElementById('w_hp').value
             };
 
             const actionName = id ? 'updateWarga' : 'addWarga';
             const res = await window.fetchApp(actionName, { id: id, data: payload });
-            if (res.success) { window.showToast(id ? "Data Warga diperbarui!" : "Data Warga disimpan!"); window.loadMenu('warga'); } 
-            else { window.showToast(res.message, 'error'); btn.innerHTML = originalText; btn.disabled = false; }
+            if (res.success) { 
+                window.showToast(id ? "Data Warga diperbarui!" : "Data Warga berhasil disimpan!", "success"); 
+                window.loadMenu('warga'); 
+            } else { 
+                window.showToast(res.message, 'error'); 
+                btn.innerHTML = originalText; 
+                btn.disabled = false; 
+            }
         };
 
         window.deleteWarga = function(id) {
@@ -1257,26 +1367,7 @@
 
                     json.forEach((r, i) => {
                         if(r.namaLengkap && r.noRumah) {
-                            let parsedTgl = '';
-                            let tglRaw = r.tanggalLahir;
-                            if(tglRaw) {
-                                if(typeof tglRaw === 'number' || (!isNaN(tglRaw) && String(tglRaw).trim() !== '')) {
-                                    const serial = Number(tglRaw);
-                                    const jsDate = new Date(Math.round((serial - 25569) * 86400 * 1000));
-                                    parsedTgl = jsDate.toISOString().split('T')[0];
-                                } else if (typeof tglRaw === 'string') {
-                                    const parts = tglRaw.split(/[\/\-]/);
-                                    if (parts.length === 3) {
-                                        if (parts[2].length === 4) parsedTgl = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-                                        else if (parts[0].length === 4) parsedTgl = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-                                        else parsedTgl = tglRaw;
-                                    } else {
-                                        parsedTgl = tglRaw;
-                                    }
-                                }
-                            }
-
-                            wBatch.push({ id: 'W_IMP' + timeSeed + i, noKk: String(r.noKk || ''), nik: String(r.nik || ''), namaLengkap: r.namaLengkap, noRumah: String(r.noRumah), jenisKelamin: r.jenisKelamin || 'Laki-laki', tempatLahir: r.tempatLahir || '', tanggalLahir: parsedTgl, agama: 'Islam', pekerjaan: r.pekerjaan || '', statusKeluarga: r.statusKeluarga || 'Lainnya', statusTinggal: r.statusTinggal || 'Tetap', noHp: String(r.noHp || '') });
+                            wBatch.push({ id: 'W_IMP' + timeSeed + i, noKk: String(r.noKk || ''), nik: String(r.nik || ''), namaLengkap: r.namaLengkap, noRumah: String(r.noRumah), jenisKelamin: r.jenisKelamin || 'Laki-laki', tempatLahir: r.tempatLahir || '', tanggalLahir: r.tanggalLahir || '', agama: 'Islam', pekerjaan: r.pekerjaan || '', statusKeluarga: r.statusKeluarga || 'Lainnya', statusTinggal: r.statusTinggal || 'Tetap', noHp: String(r.noHp || '') });
                             uBatch.push({ id: 'U_IMP' + timeSeed + i, username: r.namaLengkap, password: "rt02oke", role: "warga", noRumah: String(r.noRumah), nama: r.namaLengkap });
                         }
                     });
@@ -1456,12 +1547,6 @@
             document.getElementById('page-title').innerText = "Pinjaman Warga";
             const res = await window.fetchApp('getPinjaman');
             let data = res.data || [];
-
-            data = data.map(item => {
-                if(!item.namaPeminjam && item.peminjam) item.namaPeminjam = item.peminjam;
-                if(!item.noRumah && item.blok) item.noRumah = item.blok;
-                return item;
-            });
 
             const resWarga = await window.fetchApp('getWarga');
             const dataWarga = resWarga.data || [];
@@ -1700,8 +1785,8 @@
                         </td>
                         ${currentUser.role === 'admin' ? `
                         <td class="p-3 text-center align-top opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                            <button onclick="window.editTransaksiPinjaman('${p.id}')" class="text-blue-500 bg-blue-50 p-1.5 rounded mr-1" title="Edit Transaksi ini"><i class="fas fa-edit"></i></button>
-                            <button onclick="window.deleteTransaksiPinjaman('${p.id}', '${nama}', '${noRumah}')" class="text-red-500 bg-red-50 p-1.5 rounded" title="Hapus Transaksi ini"><i class="fas fa-trash-alt"></i></button>
+                            <button onclick="window.editTransaksiPinjaman('${p.id}')" class="text-blue-500 bg-blue-50 p-1.5 rounded mr-1"><i class="fas fa-edit"></i></button>
+                            <button onclick="window.deleteTransaksiPinjaman('${p.id}', '${nama}', '${noRumah}')" class="text-red-500 bg-red-50 p-1.5 rounded"><i class="fas fa-trash-alt"></i></button>
                         </td>` : ''}
                     </tr>
                 `; 
@@ -2304,9 +2389,7 @@
                                             <div class="font-bold text-gray-800">${s.pemohon}</div>
                                             <div class="text-xs text-gray-500">Blok: ${s.noRumah}</div>
                                         </td>
-                                        <td class="p-4 align-top">
-                                            <div class="text-gray-700 bg-gray-50/80 p-3 rounded-lg border border-gray-100 whitespace-pre-wrap leading-relaxed">${s.keperluan}</div>
-                                        </td>
+                                        <td class="p-4 text-gray-700 bg-gray-50/30 rounded-lg m-2 border border-transparent whitespace-pre-wrap">${s.keperluan}</td>
                                         <td class="p-4 text-center align-top">
                                             <span class="text-[10px] font-bold px-3 py-1 rounded-full ${s.status === 'Selesai' ? 'bg-green-100 text-green-700' : s.status === 'Dibaca' ? 'bg-blue-100 text-blue-700' : 'bg-rose-100 text-rose-700 animate-pulse'} shadow-sm">
                                                 ${s.status}
@@ -2314,9 +2397,8 @@
                                         </td>
                                         ${currentUser.role === 'admin' ? `
                                         <td class="p-4 text-center align-top">
-                                            ${s.status === 'Menunggu' ? `<button onclick="window.updateSurat('${s.id}', 'Dibaca')" class="text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold mb-1 w-full border border-blue-200 transition">Tandai Dibaca</button>` : ''}
-                                            ${s.status !== 'Selesai' ? `<button onclick="window.updateSurat('${s.id}', 'Selesai')" class="text-green-600 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg text-xs font-bold w-full border border-green-200 transition"><i class="fas fa-check mr-1"></i> Selesai</button>` : ''}
-                                            ${s.status === 'Selesai' ? `<button onclick="window.deleteSurat('${s.id}')" class="text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg text-xs font-bold w-full border border-red-200 transition"><i class="fas fa-trash-alt mr-1"></i> Hapus</button>` : ''}
+                                            ${s.status === 'Menunggu' ? `<button onclick="window.updateSurat('${s.id}', 'Dibaca')" class="text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded text-xs font-bold mb-1 w-full border border-blue-200 transition">Tandai Dibaca</button>` : ''}
+                                            ${s.status !== 'Selesai' ? `<button onclick="window.updateSurat('${s.id}', 'Selesai')" class="text-green-600 bg-green-50 hover:bg-green-100 px-3 py-1 rounded text-xs font-bold w-full border border-green-200 transition"><i class="fas fa-check mr-1"></i> Selesai</button>` : ''}
                                         </td>` : ''}
                                     </tr>
                                 `).join('')}
@@ -2342,14 +2424,6 @@
             window.showToast("Memperbarui status...", "info");
             const res = await window.fetchApp('updateSuratStatus', { id: id, status: status });
             if (res.success) { window.loadMenu('kritik'); } else { window.showToast(res.message, 'error'); }
-        };
-
-        window.deleteSurat = function(id) {
-            window.showConfirmModal("Hapus Pesan", "Yakin ingin menghapus pesan ini secara permanen?", () => {
-                window.fetchApp('deleteSurat', { id: String(id) }).then(res => {
-                    if (res.success) { window.showToast("Pesan dihapus!"); window.loadMenu('kritik'); }
-                });
-            });
         };
 
         // ==========================================
