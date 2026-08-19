@@ -124,7 +124,7 @@
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-xl backdrop-blur-sm shadow-inner"><i class="fas fa-city text-blue-300"></i></div>
                     <div>
-                        <h2 class="text-xl font-bold tracking-tight">KUDEN RT 02</h2>
+                        <h2 class="text-xl font-bold tracking-tight">KUDEN</h2>
                         <div class="text-[10px] text-indigo-300 uppercase tracking-widest font-semibold" id="user-role-badge">Admin</div>
                     </div>
                 </div>
@@ -246,6 +246,10 @@
             { id: "PR3", nomor: 3, judul: "Keamanan dan Ketertiban Warga", isi: "Dilarang keras melakukan kegiatan yang dapat mengganggu ketentraman tetangga (membunyikan musik keras, membuat keributan) di atas jam 22.00 WIB." },
             { id: "PR4", nomor: 4, judul: "Kewajiban Iuran Bulanan", isi: "Setiap Kepala Keluarga (KK) wajib membayar iuran kas RT tepat waktu setiap bulannya untuk keperluan operasional (kebersihan & keamanan)." },
             { id: "PR5", nomor: 5, judul: "Kerja Bakti dan Ronda Malam", isi: "Seluruh warga laki-laki dewasa sangat diharapkan berpartisipasi aktif dalam kegiatan kerja bakti lingkungan dan mengikuti jadwal ronda siskamling malam." }
+        ];
+
+        let dbMutasi = [
+            { id: "M1", tanggal: "2026-06-10", namaLengkap: "Fulan bin Fulan", jenisMutasi: "Pindah Keluar", keterangan: "Pindah tugas ke luar kota" }
         ];
 
         let currentUser = null;
@@ -476,6 +480,21 @@
                             case 'deletePeraturan':
                                 dbPeraturan = dbPeraturan.filter(x => String(x.id) !== String(payload.id));
                                 break;
+                            case 'getMutasi': res.data = dbMutasi; break;
+                            case 'addMutasi': 
+                                payload.data.id = payload.data.id || 'M' + Date.now();
+                                dbMutasi.push(payload.data);
+                                if(payload.data.wargaId) {
+                                    dbWarga = dbWarga.filter(w => String(w.id) !== String(payload.data.wargaId));
+                                }
+                                break;
+                            case 'addMutasiMasuk':
+                                payload.mutasiData.id = payload.mutasiData.id || 'M' + Date.now();
+                                dbMutasi.push(payload.mutasiData);
+                                payload.wargaData.id = payload.wargaData.id || 'W' + Date.now();
+                                dbWarga.push(payload.wargaData); 
+                                dbUsers.push({ id: 'U' + Date.now(), username: payload.wargaData.namaLengkap, password: "rt02oke", role: "warga", noRumah: payload.wargaData.noRumah, nama: payload.wargaData.namaLengkap });
+                                break;
                             case 'getSlider': res.data = dbSlider; break;
                             case 'addSlide':
                                 payload.data.id = 'SL' + Date.now();
@@ -502,7 +521,7 @@
                         case 'login':
                             let users = await getCol('Users');
                             if(users.length === 0) {
-                                const collectionsToSeed = { 'Users': dbUsers, 'Warga': dbWarga, 'Keuangan': dbKeuangan, 'Pengumuman': dbPengumuman, 'Surat': dbSurat, 'Slider': dbSlider, 'Pinjaman': dbPinjaman, 'Inventaris': dbInventaris, 'Notulen': dbNotulen, 'Peraturan': dbPeraturan };
+                                const collectionsToSeed = { 'Users': dbUsers, 'Warga': dbWarga, 'Keuangan': dbKeuangan, 'Pengumuman': dbPengumuman, 'Surat': dbSurat, 'Slider': dbSlider, 'Pinjaman': dbPinjaman, 'Inventaris': dbInventaris, 'Notulen': dbNotulen, 'Peraturan': dbPeraturan, 'Mutasi': dbMutasi };
                                 for (const [colName, items] of Object.entries(collectionsToSeed)) { for (const item of items) { await db.collection(colName).doc(item.id).set(item); } }
                                 users = await getCol('Users'); 
                             }
@@ -569,6 +588,20 @@
                         case 'addPeraturan': payload.data.id = payload.data.id || 'PR' + Date.now(); await db.collection('Peraturan').doc(payload.data.id).set(payload.data); break;
                         case 'updatePeraturan': await db.collection('Peraturan').doc(payload.id).update(payload.data); break;
                         case 'deletePeraturan': await db.collection('Peraturan').doc(payload.id).delete(); break;
+                        case 'getMutasi': res.data = await getCol('Mutasi'); break;
+                        case 'addMutasi': 
+                            payload.data.id = payload.data.id || 'M' + Date.now(); 
+                            await db.collection('Mutasi').doc(payload.data.id).set(payload.data); 
+                            if(payload.data.wargaId) await db.collection('Warga').doc(payload.data.wargaId).delete();
+                            break;
+                        case 'addMutasiMasuk':
+                            payload.mutasiData.id = payload.mutasiData.id || 'M' + Date.now();
+                            await db.collection('Mutasi').doc(payload.mutasiData.id).set(payload.mutasiData);
+                            payload.wargaData.id = payload.wargaData.id || 'W' + Date.now(); 
+                            await db.collection('Warga').doc(payload.wargaData.id).set(payload.wargaData);
+                            const newUserIdM = 'U' + Date.now(); 
+                            await db.collection('Users').doc(newUserIdM).set({ id: newUserIdM, username: payload.wargaData.namaLengkap, password: "rt02oke", role: "warga", noRumah: payload.wargaData.noRumah, nama: payload.wargaData.namaLengkap });
+                            break;
                         case 'getSlider': res.data = await getCol('Slider'); break;
                         case 'addSlide': payload.data.id = 'SL' + Date.now(); payload.data.url = payload.data.url || payload.data.base64; await db.collection('Slider').doc(payload.data.id).set(payload.data); break;
                         case 'deleteSlide': await db.collection('Slider').doc(payload.id).delete(); break;
@@ -842,6 +875,7 @@
             const res = await window.fetchApp('getWarga');
             const data = res.data || [];
             window.wargaList = data;
+            window.currentWargaData = data;
 
             let kks = new Set();
             let totalL = 0, totalP = 0, totalKontrak = 0;
@@ -1001,6 +1035,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                <button onclick="window.openModalMutasi()" class="w-full sm:w-auto flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition whitespace-nowrap"><i class="fas fa-exchange-alt mr-2"></i>Buku Mutasi</button>
                             </div>
 
                             <!-- KANAN: Search & Action Buttons -->
@@ -1011,6 +1046,7 @@
                                 </div>
                                 ${currentUser.role === 'admin' ? `
                                 <div class="flex items-center gap-2 w-full sm:w-auto">
+                                    <button onclick="window.printDataWarga()" class="flex-1 sm:flex-none flex items-center justify-center bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition whitespace-nowrap"><i class="fas fa-print mr-2"></i>Cetak</button>
                                     <button onclick="window.openModalTambahWarga()" class="flex-1 sm:flex-none flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Tambah</button>
                                     <button onclick="window.openModalImportWarga()" class="flex-1 sm:flex-none flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition whitespace-nowrap"><i class="fas fa-file-excel mr-2"></i>Import</button>
                                     <button onclick="window.deleteAllWarga()" class="flex-1 sm:flex-none flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition whitespace-nowrap"><i class="fas fa-trash-alt mr-2"></i>Hapus Semua</button>
@@ -1131,6 +1167,155 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- MODAL BUKU MUTASI -->
+                <div id="modal-mutasi" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[99999] flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div class="flex justify-between items-center p-5 border-b bg-rose-50">
+                            <h3 class="text-lg font-bold text-rose-800"><i class="fas fa-book mr-2"></i>Buku Mutasi Warga</h3>
+                            <button onclick="document.getElementById('modal-mutasi').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                        </div>
+                        <div class="p-4 bg-gray-50 flex justify-between items-center border-b border-gray-100">
+                            <p class="text-sm text-gray-500 font-medium">Riwayat warga masuk, pindah, atau meninggal dunia.</p>
+                            <div class="flex gap-2">
+                                <button onclick="window.openFormMutasiMasuk()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-sm font-bold shadow-sm transition whitespace-nowrap"><i class="fas fa-sign-in-alt mr-1"></i> Pindah Masuk</button>
+                                <button onclick="window.openFormMutasi()" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-lg text-sm font-bold shadow-sm transition whitespace-nowrap"><i class="fas fa-sign-out-alt mr-1"></i> Pindah Keluar</button>
+                            </div>
+                        </div>
+                        <div class="p-0 overflow-y-auto custom-scrollbar flex-1">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-100 text-gray-500 text-xs uppercase tracking-wider sticky top-0 shadow-sm">
+                                        <th class="p-4 border-b font-semibold">Tanggal</th>
+                                        <th class="p-4 border-b font-semibold">Nama Warga</th>
+                                        <th class="p-4 border-b font-semibold">Jenis Mutasi</th>
+                                        <th class="p-4 border-b font-semibold">Keterangan</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm divide-y divide-gray-100" id="mutasi-tbody">
+                                    <tr><td colspan="4" class="p-8 text-center text-gray-500 italic"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MODAL FORM MUTASI -->
+                <div id="modal-form-mutasi" class="hidden fixed inset-0 bg-black bg-opacity-70 z-[999999] flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
+                        <div class="flex justify-between items-center p-5 border-b bg-rose-600 text-white">
+                            <h3 class="text-lg font-bold"><i class="fas fa-user-minus mr-2"></i>Catat Mutasi Baru</h3>
+                            <button onclick="document.getElementById('modal-form-mutasi').classList.add('hidden')" class="text-white/70 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+                        </div>
+                        <div class="p-6">
+                            <div class="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-700 text-xs rounded-xl flex items-start gap-2">
+                                <i class="fas fa-exclamation-triangle mt-0.5"></i>
+                                <p><strong>Perhatian:</strong> Warga yang dicatat dalam mutasi akan otomatis <strong>dihapus</strong> dari daftar Warga Aktif.</p>
+                            </div>
+                            <form id="form-mutasi" onsubmit="window.submitMutasi(event)" class="space-y-4">
+                                <input type="hidden" id="m_warga_id">
+                                <div><label class="block text-xs font-bold text-gray-600 mb-1">Tanggal Mutasi <span class="text-red-500">*</span></label><input type="date" id="m_tanggal" required class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-rose-500 outline-none"></div>
+                                
+                                <div class="relative">
+                                    <label class="block text-xs font-bold text-gray-600 mb-1">Cari Nama Warga <span class="text-red-500">*</span></label>
+                                    <input type="text" id="m_search_warga" required list="m_warga_datalist" onchange="window.handleSelectMutasiWarga(this.value)" placeholder="Ketik dan pilih nama warga..." class="w-full p-2.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-rose-500 outline-none">
+                                    <datalist id="m_warga_datalist">
+                                        ${window.wargaList ? window.wargaList.map(w => `<option value="${w.namaLengkap} (${w.noKk})"></option>`).join('') : ''}
+                                    </datalist>
+                                    <p class="text-[10px] text-gray-400 mt-1" id="m_warga_terpilih">Pilih warga dari daftar yang muncul.</p>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-600 mb-1">Jenis Mutasi <span class="text-red-500">*</span></label>
+                                    <select id="m_jenis" required class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-rose-500 outline-none">
+                                        <option value="Pindah Keluar">Pindah Keluar / Domisili</option>
+                                        <option value="Meninggal Dunia">Meninggal Dunia</option>
+                                    </select>
+                                </div>
+                                
+                                <div><label class="block text-xs font-bold text-gray-600 mb-1">Keterangan / Alasan</label><textarea id="m_ket" rows="2" placeholder="Cth: Pindah ke Surabaya..." class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-rose-500 outline-none"></textarea></div>
+                                
+                                <div class="pt-4 border-t mt-4 flex justify-end gap-3">
+                                    <button type="button" onclick="document.getElementById('modal-form-mutasi').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition">Batal</button>
+                                    <button type="submit" id="btn-save-mutasi" class="px-5 py-2 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm transition"><i class="fas fa-check mr-2"></i>Proses Mutasi</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MODAL FORM MUTASI MASUK -->
+                <div id="modal-form-mutasi-masuk" class="hidden fixed inset-0 bg-black bg-opacity-70 z-[999999] flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div class="flex justify-between items-center p-5 border-b bg-emerald-600 text-white">
+                            <h3 class="text-lg font-bold"><i class="fas fa-user-plus mr-2"></i>Catat Mutasi Masuk (Warga Baru)</h3>
+                            <button onclick="document.getElementById('modal-form-mutasi-masuk').classList.add('hidden')" class="text-white/70 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+                        </div>
+                        <div class="p-6 overflow-y-auto custom-scrollbar">
+                            <div class="mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-700 text-xs rounded-xl flex items-start gap-2">
+                                <i class="fas fa-info-circle mt-0.5"></i>
+                                <p><strong>Info:</strong> Mencatat warga pindahan ke RT ini. Data warga akan <strong>otomatis ditambahkan</strong> ke daftar Warga Aktif.</p>
+                            </div>
+                            <form id="form-mutasi-masuk" onsubmit="window.submitMutasiMasuk(event)" class="space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">Tanggal Masuk <span class="text-red-500">*</span></label><input type="date" id="mm_tanggal" required class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">Asal Pindahan</label><input type="text" id="mm_asal" placeholder="Cth: Dari Surabaya..." class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+                                </div>
+                                <div class="border-t border-dashed my-2 border-gray-200"></div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">No. KK <span class="text-red-500">*</span></label><input type="text" id="mm_kk" required class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">NIK <span class="text-red-500">*</span></label><input type="text" id="mm_nik" required class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+                                </div>
+                                <div><label class="block text-xs font-bold text-gray-600 mb-1">Nama Lengkap <span class="text-red-500">*</span></label><input type="text" id="mm_nama" required class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+                                <div><label class="block text-xs font-bold text-gray-600 mb-1">Alamat/Blok RT <span class="text-red-500">*</span></label><input type="text" id="mm_rumah" required placeholder="Contoh: A-01" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+                                
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">Jenis Kelamin</label>
+                                        <select id="mm_jk" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-emerald-500 outline-none">
+                                            <option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option>
+                                        </select>
+                                    </div>
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">Pekerjaan <span class="text-red-500">*</span></label>
+                                        <select id="mm_pekerjaan" required class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-emerald-500 outline-none">
+                                            <option value="" disabled selected>-- Pilih --</option>
+                                            <option value="Belum/Tidak Bekerja">Belum/Tidak Bekerja</option>
+                                            <option value="Mengurus Rumah Tangga">Mengurus Rumah Tangga</option>
+                                            <option value="Pelajar/Mahasiswa">Pelajar/Mahasiswa</option>
+                                            <option value="PNS / ASN">PNS / ASN</option>
+                                            <option value="TNI / POLRI">TNI / POLRI</option>
+                                            <option value="Karyawan Swasta">Karyawan Swasta</option>
+                                            <option value="Buruh Harian Lepas">Buruh Harian Lepas</option>
+                                            <option value="Wiraswasta">Wiraswasta</option>
+                                            <option value="Pensiunan">Pensiunan</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">Tempat Lahir</label><input type="text" id="mm_tmpLahir" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">Tanggal Lahir</label><input type="date" id="mm_tglLahir" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">Status Keluarga</label>
+                                        <select id="mm_status" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-emerald-500 outline-none">
+                                            <option value="Kepala Keluarga">Kepala Keluarga</option><option value="Istri">Istri</option><option value="Anak">Anak</option><option value="Lainnya">Lainnya</option>
+                                        </select>
+                                    </div>
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">Status Tinggal</label>
+                                        <select id="mm_tinggal" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-emerald-500 outline-none">
+                                            <option value="Tetap">Warga Tetap</option><option value="Kontrak">Pengontrak</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div><label class="block text-xs font-bold text-gray-600 mb-1">No. HP (WA)</label><input type="text" id="mm_hp" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+                                
+                                <div class="pt-4 border-t mt-4 flex justify-end gap-3">
+                                    <button type="button" onclick="document.getElementById('modal-form-mutasi-masuk').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition">Batal</button>
+                                    <button type="submit" id="btn-save-mutasi-masuk" class="px-5 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition"><i class="fas fa-check mr-2"></i>Simpan Mutasi Masuk</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
                 ` : ''}
             `;
             document.getElementById('content-area').innerHTML = html;
@@ -1203,6 +1388,8 @@
                     return true;
                 });
 
+                window.currentWargaData = filtered;
+
                 // 2. Tampilkan hasil di tabel HTML
                 const tbody = document.getElementById('warga-tbody');
                 if (tbody) tbody.innerHTML = window.generateWargaRows(filtered);
@@ -1241,6 +1428,112 @@
             
             window.filterWarga();
             document.getElementById('filter-dropdown-menu').classList.add('hidden');
+        };
+
+        window.printDataWarga = function() {
+            let dataToPrint = window.currentWargaData || window.wargaList || [];
+            if(dataToPrint.length === 0) {
+                window.showToast("Tidak ada data untuk dicetak", "error");
+                return;
+            }
+
+            let today = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            let printWin = window.open('', '_blank');
+            
+            let tableRows = dataToPrint.map((w, i) => `
+                <tr>
+                    <td style="text-align: center; padding: 6px; border: 1px solid #333;">${i + 1}</td>
+                    <td style="padding: 6px; border: 1px solid #333;">${w.noKk || '-'}</td>
+                    <td style="padding: 6px; border: 1px solid #333;">${w.nik || '-'}</td>
+                    <td style="padding: 6px; border: 1px solid #333;"><b>${w.namaLengkap}</b></td>
+                    <td style="text-align: center; padding: 6px; border: 1px solid #333;">${w.jenisKelamin === 'Laki-laki' ? 'L' : 'P'}</td>
+                    <td style="padding: 6px; border: 1px solid #333;">${w.tempatLahir || '-'}, ${w.tanggalLahir || '-'}</td>
+                    <td style="text-align: center; padding: 6px; border: 1px solid #333;">${w.noRumah || '-'}</td>
+                    <td style="padding: 6px; border: 1px solid #333;">${w.pekerjaan || '-'}</td>
+                    <td style="padding: 6px; border: 1px solid #333;">${w.statusKeluarga || '-'}</td>
+                </tr>
+            `).join('');
+
+            let html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Cetak Data Warga - KUDEN</title>
+                    <style>
+                        body { font-family: 'Times New Roman', Times, serif; color: #000; margin: 0; padding: 20px; }
+                        .header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid #000; padding-bottom: 10px; }
+                        .header h1 { margin: 0; font-size: 22px; text-transform: uppercase; }
+                        .header p { margin: 5px 0 0 0; font-size: 14px; }
+                        .table-container { width: 100%; margin-top: 15px; }
+                        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                        th { background-color: #f0f0f0; padding: 8px; border: 1px solid #333; font-weight: bold; }
+                        td { padding: 6px; border: 1px solid #333; }
+                        .footer { margin-top: 40px; display: flex; justify-content: flex-end; }
+                        .signature { text-align: center; width: 200px; }
+                        .signature p { margin: 0; font-size: 14px; }
+                        .signature .space { height: 80px; }
+                        @media print {
+                            @page { size: landscape; margin: 1cm; }
+                            body { padding: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>LAPORAN DATA PENDUDUK</h1>
+                        <p>Sistem Informasi Manajemen Lingkungan RT</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 10px; font-size: 12px;">
+                        <b>Tanggal Cetak:</b> ${today}<br>
+                        <b>Total Data:</b> ${dataToPrint.length} Jiwa
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 4%;">No</th>
+                                    <th style="width: 14%;">No. KK</th>
+                                    <th style="width: 14%;">NIK</th>
+                                    <th style="width: 20%;">Nama Lengkap</th>
+                                    <th style="width: 4%;">L/P</th>
+                                    <th style="width: 15%;">Tempat, Tgl Lahir</th>
+                                    <th style="width: 8%;">Blok</th>
+                                    <th style="width: 11%;">Pekerjaan</th>
+                                    <th style="width: 10%;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="footer">
+                        <div class="signature">
+                            <p>Mengetahui,</p>
+                            <p><b>Pengurus RT</b></p>
+                            <div class="space"></div>
+                            <p>( <b>${currentUser.nama}</b> )</p>
+                        </div>
+                    </div>
+
+                    <script>
+                        window.onload = function() {
+                            setTimeout(function() {
+                                window.print();
+                                window.close();
+                            }, 500);
+                        }
+                    <\/script>
+                </body>
+                </html>
+            `;
+
+            printWin.document.open();
+            printWin.document.write(html);
+            printWin.document.close();
         };
 
         document.addEventListener('click', function(event) {
@@ -1403,6 +1696,154 @@
                 finally { btn.innerHTML = originalText; btn.disabled = false; }
             };
             reader.readAsArrayBuffer(file);
+        };
+
+        window.openModalMutasi = async function() {
+            document.getElementById('modal-mutasi').classList.remove('hidden');
+            const tbody = document.getElementById('mutasi-tbody');
+            tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-gray-500 italic"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat data...</td></tr>';
+            
+            const res = await window.fetchApp('getMutasi');
+            const data = res.data || [];
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-gray-500 italic">Belum ada riwayat mutasi warga.</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.reverse().map(m => {
+                let badgeClass = 'bg-orange-100 text-orange-700';
+                if (m.jenisMutasi === 'Meninggal Dunia') badgeClass = 'bg-gray-800 text-white';
+                if (m.jenisMutasi === 'Mutasi Masuk' || m.jenisMutasi === 'Pindah Masuk') badgeClass = 'bg-emerald-100 text-emerald-700';
+
+                return `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="p-4 text-gray-500 text-xs whitespace-nowrap">${m.tanggal}</td>
+                    <td class="p-4 font-bold text-gray-800">${m.namaLengkap}</td>
+                    <td class="p-4">
+                        <span class="text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${badgeClass}">${m.jenisMutasi}</span>
+                    </td>
+                    <td class="p-4 text-sm text-gray-600">${m.keterangan || '-'}</td>
+                </tr>
+                `;
+            }).join('');
+        };
+
+        window.openFormMutasi = function() {
+            document.getElementById('form-mutasi').reset();
+            document.getElementById('m_warga_id').value = '';
+            document.getElementById('m_tanggal').value = new Date().toISOString().split('T')[0];
+            document.getElementById('m_warga_terpilih').innerText = 'Pilih warga dari daftar yang muncul.';
+            document.getElementById('m_warga_terpilih').className = 'text-[10px] text-gray-400 mt-1';
+            document.getElementById('modal-form-mutasi').classList.remove('hidden');
+        };
+
+        window.openFormMutasiMasuk = function() {
+            document.getElementById('form-mutasi-masuk').reset();
+            document.getElementById('mm_tanggal').value = new Date().toISOString().split('T')[0];
+            document.getElementById('modal-form-mutasi-masuk').classList.remove('hidden');
+        };
+
+        window.submitMutasiMasuk = async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-mutasi-masuk');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...'; 
+            btn.disabled = true;
+
+            const wargaData = {
+                noKk: document.getElementById('mm_kk').value.trim(),
+                nik: document.getElementById('mm_nik').value.trim(),
+                namaLengkap: document.getElementById('mm_nama').value.trim(),
+                noRumah: document.getElementById('mm_rumah').value.trim(),
+                jenisKelamin: document.getElementById('mm_jk').value,
+                tempatLahir: document.getElementById('mm_tmpLahir').value.trim(),
+                tanggalLahir: document.getElementById('mm_tglLahir').value,
+                agama: "Islam",
+                pekerjaan: document.getElementById('mm_pekerjaan').value,
+                statusKeluarga: document.getElementById('mm_status').value,
+                statusTinggal: document.getElementById('mm_tinggal').value,
+                noHp: document.getElementById('mm_hp').value.trim()
+            };
+
+            const asal = document.getElementById('mm_asal').value.trim();
+            const ket = asal ? 'Pindahan dari: ' + asal : 'Pindah Masuk Baru';
+
+            const mutasiData = {
+                tanggal: document.getElementById('mm_tanggal').value,
+                namaLengkap: wargaData.namaLengkap,
+                jenisMutasi: "Pindah Masuk",
+                keterangan: ket
+            };
+
+            const res = await window.fetchApp('addMutasiMasuk', { wargaData, mutasiData });
+            if(res.success) {
+                window.showToast("Mutasi Masuk dicatat! Warga berhasil ditambahkan.", "success");
+                document.getElementById('modal-form-mutasi-masuk').classList.add('hidden');
+                window.openModalMutasi(); 
+                window.loadMenu('warga'); 
+            } else {
+                window.showToast(res.message, "error");
+            }
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        };
+
+        window.handleSelectMutasiWarga = function(val) {
+            if(!val) return;
+            const match = val.match(/^(.*) \((.*)\)$/);
+            if(match) {
+                const nama = match[1];
+                const kk = match[2];
+                const warga = window.wargaList.find(w => w.namaLengkap === nama && w.noKk === kk);
+                if(warga) {
+                    document.getElementById('m_warga_id').value = warga.id;
+                    document.getElementById('m_warga_terpilih').innerText = '✅ Terpilih: ' + warga.namaLengkap + ' (Blok: ' + warga.noRumah + ')';
+                    document.getElementById('m_warga_terpilih').className = 'text-[10px] text-green-600 font-bold mt-1';
+                }
+            } else {
+                document.getElementById('m_warga_id').value = '';
+                document.getElementById('m_warga_terpilih').innerText = '❌ Warga tidak ditemukan di database. Pastikan memilih dari opsi.';
+                document.getElementById('m_warga_terpilih').className = 'text-[10px] text-red-500 font-bold mt-1';
+            }
+        };
+
+        window.submitMutasi = async function(e) {
+            e.preventDefault();
+            const wargaId = document.getElementById('m_warga_id').value;
+            const namaInput = document.getElementById('m_search_warga').value;
+            
+            if(!wargaId) {
+                window.showToast("Silakan pilih nama warga yang valid dari daftar dropdown!", "error");
+                return;
+            }
+            
+            const namaAsli = namaInput.match(/^(.*) \((.*)\)$/) ? namaInput.match(/^(.*) \((.*)\)$/)[1] : namaInput;
+
+            const btn = document.getElementById('btn-save-mutasi');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...'; 
+            btn.disabled = true;
+
+            const payload = {
+                wargaId: wargaId,
+                tanggal: document.getElementById('m_tanggal').value,
+                namaLengkap: namaAsli,
+                jenisMutasi: document.getElementById('m_jenis').value,
+                keterangan: document.getElementById('m_ket').value
+            };
+
+            const res = await window.fetchApp('addMutasi', { data: payload });
+            if(res.success) {
+                window.showToast("Mutasi berhasil dicatat! Warga dihapus dari daftar aktif.", "success");
+                document.getElementById('modal-form-mutasi').classList.add('hidden');
+                window.openModalMutasi(); 
+                window.loadMenu('warga'); 
+            } else {
+                window.showToast(res.message, "error");
+            }
+            btn.innerHTML = originalText;
+            btn.disabled = false;
         };
 
         // ==========================================
