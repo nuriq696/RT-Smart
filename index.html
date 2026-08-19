@@ -82,7 +82,7 @@
                 <div id="login-logo-container" class="w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-2xl mx-auto flex items-center justify-center text-white text-4xl shadow-lg mb-4 transform rotate-3">
                     <i id="login-logo-icon" class="fas fa-city -rotate-3"></i>
                 </div>
-                <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">KUDEN</h1>
+                <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">KUDEN RT 02</h1>
                 <p class="text-sm text-gray-500 mt-2 font-medium">Sistem Informasi Manajemen Warga</p>
             </div>
             
@@ -111,7 +111,7 @@
                     <i class="fas fa-download mr-2 text-lg"></i> Install Aplikasi ke HP
                 </button>
             </form>
-            <div class="mt-6 text-center text-xs text-gray-400 font-medium">&copy; 2026 KUDEN - All Rights Reserved</div>
+            <div class="mt-6 text-center text-xs text-gray-400 font-medium">&copy; 2026 KUDEN - nuriq696</div>
         </div>
     </div>
 
@@ -124,7 +124,7 @@
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-xl backdrop-blur-sm shadow-inner"><i class="fas fa-city text-blue-300"></i></div>
                     <div>
-                        <h2 class="text-xl font-bold tracking-tight">KUDEN</h2>
+                        <h2 class="text-xl font-bold tracking-tight">KUDEN RT 02</h2>
                         <div class="text-[10px] text-indigo-300 uppercase tracking-widest font-semibold" id="user-role-badge">Admin</div>
                     </div>
                 </div>
@@ -1094,6 +1094,7 @@
                                     <div><label class="block text-xs font-bold text-gray-600 mb-1">No. HP (WA)</label><input type="text" id="w_hp" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"></div>
                                 </div>
                                 <div class="pt-4 border-t mt-4 flex justify-end gap-3">
+                                    <button type="button" id="btn-add-family" onclick="window.tambahAnggotaKeluarga()" class="hidden px-4 py-2 text-sm font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition mr-auto border border-emerald-200"><i class="fas fa-user-plus mr-1"></i> Tambah Anggota KK</button>
                                     <button type="button" onclick="document.getElementById('modal-warga').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition">Batal</button>
                                     <button type="submit" id="btn-save-warga" class="px-5 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition">Simpan Data</button>
                                 </div>
@@ -1255,6 +1256,8 @@
             document.getElementById('w_id').value = '';
             document.getElementById('modal-warga-title').innerHTML = "Tambah Data Warga";
             document.getElementById('btn-save-warga').innerHTML = "Simpan Data";
+            const btnFamily = document.getElementById('btn-add-family');
+            if(btnFamily) btnFamily.classList.add('hidden');
             document.getElementById('modal-warga').classList.remove('hidden');
         };
 
@@ -1274,7 +1277,28 @@
             document.getElementById('w_tinggal').value = w.statusTinggal; document.getElementById('w_hp').value = w.noHp || '';
             document.getElementById('modal-warga-title').innerHTML = '<i class="fas fa-user-edit text-blue-500 mr-2"></i>Edit Data Warga';
             document.getElementById('btn-save-warga').innerHTML = "Simpan Perubahan";
+            
+            const btnFamily = document.getElementById('btn-add-family');
+            if(btnFamily) btnFamily.classList.remove('hidden');
+
             document.getElementById('modal-warga').classList.remove('hidden');
+        };
+
+        window.tambahAnggotaKeluarga = function() {
+            const currentKk = document.getElementById('w_kk').value;
+            const currentRumah = document.getElementById('w_rumah').value;
+            
+            // Buka mode tambah (mengosongkan semua isian)
+            window.openModalTambahWarga();
+            
+            // Kembalikan nomor KK dan Rumah yang disalin
+            document.getElementById('w_kk').value = currentKk;
+            document.getElementById('w_rumah').value = currentRumah;
+            
+            // Ubah tampilan
+            document.getElementById('modal-warga-title').innerHTML = '<i class="fas fa-user-plus text-emerald-500 mr-2"></i>Tambah Anggota KK';
+            document.getElementById('w_status').value = 'Istri'; // Set default menjadi Istri atau Anak
+            document.getElementById('w_nik').focus(); // Fokus ke input NIK
         };
 
         window.submitWarga = async function(e) {
