@@ -82,7 +82,7 @@
                 <div id="login-logo-container" class="w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-2xl mx-auto flex items-center justify-center text-white text-4xl shadow-lg mb-4 transform rotate-3">
                     <i id="login-logo-icon" class="fas fa-city -rotate-3"></i>
                 </div>
-                <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">KUDEN RT 02</h1>
+                <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">KUDEN</h1>
                 <p class="text-sm text-gray-500 mt-2 font-medium">Sistem Informasi Manajemen Warga</p>
             </div>
             
@@ -248,8 +248,17 @@
             { id: "PR5", nomor: 5, judul: "Kerja Bakti dan Ronda Malam", isi: "Seluruh warga laki-laki dewasa sangat diharapkan berpartisipasi aktif dalam kegiatan kerja bakti lingkungan dan mengikuti jadwal ronda siskamling malam." }
         ];
 
+        let dbKeputusan = [
+            { id: "KP1", nomor: "01/KEP-RT/VIII/2026", tanggal: "2026-08-15", judul: "Pembentukan Panitia Lomba HUT RI 81", isi: "Memutuskan pembentukan panitia pelaksana kegiatan HUT Kemerdekaan RI ke-81 tingkat RT. Seluruh warga diharapkan mendukung penuh program kerja panitia yang terbentuk.", penandatangan: "Bapak Ketua RT" }
+        ];
+
         let dbMutasi = [
             { id: "M1", tanggal: "2026-06-10", namaLengkap: "Fulan bin Fulan", jenisMutasi: "Pindah Keluar", keterangan: "Pindah tugas ke luar kota" }
+        ];
+
+        let dbAngsuran = [
+            { id: "ANG1", tanggal: "2026-06-15", namaWarga: "Budi Santoso", noRumah: "A-01", nominal: 50000, keterangan: "Iuran Wajib Bulan Juni" },
+            { id: "ANG2", tanggal: "2026-06-16", namaWarga: "Eko Prasetyo", noRumah: "B-02", nominal: 50000, keterangan: "Iuran Wajib Bulan Juni" }
         ];
 
         let currentUser = null;
@@ -480,6 +489,17 @@
                             case 'deletePeraturan':
                                 dbPeraturan = dbPeraturan.filter(x => String(x.id) !== String(payload.id));
                                 break;
+                            case 'getKeputusan': res.data = dbKeputusan; break;
+                            case 'addKeputusan': 
+                                payload.data.id = payload.data.id || 'KP' + Date.now();
+                                dbKeputusan.push(payload.data); break;
+                            case 'updateKeputusan':
+                                const kpIdx = dbKeputusan.findIndex(x => String(x.id) === String(payload.id));
+                                if(kpIdx !== -1) dbKeputusan[kpIdx] = { ...dbKeputusan[kpIdx], ...payload.data };
+                                break;
+                            case 'deleteKeputusan':
+                                dbKeputusan = dbKeputusan.filter(x => String(x.id) !== String(payload.id));
+                                break;
                             case 'getMutasi': res.data = dbMutasi; break;
                             case 'addMutasi': 
                                 payload.data.id = payload.data.id || 'M' + Date.now();
@@ -508,6 +528,10 @@
                                 if (userToUpdate) { if(payload.username) userToUpdate.username = payload.username; if(payload.password) userToUpdate.password = payload.password; }
                                 currentUser.username = payload.username || currentUser.username; currentUser.password = payload.password || currentUser.password;
                                 break;
+                            case 'getAngsuran': res.data = currentUser.role === 'warga' ? dbAngsuran.filter(a => a.noRumah === currentUser.noRumah) : dbAngsuran; break;
+                            case 'addAngsuran': payload.data.id = 'ANG' + Date.now(); dbAngsuran.push(payload.data); break;
+                            case 'updateAngsuran': const angIdx = dbAngsuran.findIndex(x => String(x.id) === String(payload.id)); if(angIdx !== -1) dbAngsuran[angIdx] = { ...dbAngsuran[angIdx], ...payload.data }; break;
+                            case 'deleteAngsuran': dbAngsuran = dbAngsuran.filter(x => String(x.id) !== String(payload.id)); break;
                         }
                         resolve(res);
                     }, 300); 
@@ -521,7 +545,7 @@
                         case 'login':
                             let users = await getCol('Users');
                             if(users.length === 0) {
-                                const collectionsToSeed = { 'Users': dbUsers, 'Warga': dbWarga, 'Keuangan': dbKeuangan, 'Pengumuman': dbPengumuman, 'Surat': dbSurat, 'Slider': dbSlider, 'Pinjaman': dbPinjaman, 'Inventaris': dbInventaris, 'Notulen': dbNotulen, 'Peraturan': dbPeraturan, 'Mutasi': dbMutasi };
+                                const collectionsToSeed = { 'Users': dbUsers, 'Warga': dbWarga, 'Keuangan': dbKeuangan, 'Pengumuman': dbPengumuman, 'Surat': dbSurat, 'Slider': dbSlider, 'Pinjaman': dbPinjaman, 'Inventaris': dbInventaris, 'Notulen': dbNotulen, 'Peraturan': dbPeraturan, 'Keputusan': dbKeputusan, 'Mutasi': dbMutasi };
                                 for (const [colName, items] of Object.entries(collectionsToSeed)) { for (const item of items) { await db.collection(colName).doc(item.id).set(item); } }
                                 users = await getCol('Users'); 
                             }
@@ -588,6 +612,10 @@
                         case 'addPeraturan': payload.data.id = payload.data.id || 'PR' + Date.now(); await db.collection('Peraturan').doc(payload.data.id).set(payload.data); break;
                         case 'updatePeraturan': await db.collection('Peraturan').doc(payload.id).update(payload.data); break;
                         case 'deletePeraturan': await db.collection('Peraturan').doc(payload.id).delete(); break;
+                        case 'getKeputusan': res.data = await getCol('Keputusan'); break;
+                        case 'addKeputusan': payload.data.id = payload.data.id || 'KP' + Date.now(); await db.collection('Keputusan').doc(payload.data.id).set(payload.data); break;
+                        case 'updateKeputusan': await db.collection('Keputusan').doc(payload.id).update(payload.data); break;
+                        case 'deleteKeputusan': await db.collection('Keputusan').doc(payload.id).delete(); break;
                         case 'getMutasi': res.data = await getCol('Mutasi'); break;
                         case 'addMutasi': 
                             payload.data.id = payload.data.id || 'M' + Date.now(); 
@@ -610,6 +638,10 @@
                             await db.collection('Users').doc(payload.id).update(updateObj);
                             currentUser.username = payload.username || currentUser.username; currentUser.password = payload.password || currentUser.password;
                             break;
+                        case 'getAngsuran': const angAll = await getCol('Angsuran'); res.data = currentUser.role === 'warga' ? angAll.filter(a => a.noRumah === currentUser.noRumah) : angAll; break;
+                        case 'addAngsuran': payload.data.id = 'ANG' + Date.now(); await db.collection('Angsuran').doc(payload.data.id).set(payload.data); break;
+                        case 'updateAngsuran': await db.collection('Angsuran').doc(payload.id).update(payload.data); break;
+                        case 'deleteAngsuran': await db.collection('Angsuran').doc(payload.id).delete(); break;
                     }
                 } catch (err) { res.success = false; res.message = err.message; }
                 return res;
@@ -660,6 +692,7 @@
                 menus = [
                     { id: 'dashboard', icon: 'fa-chart-pie', text: 'Dashboard Utama' },
                     { id: 'warga', icon: 'fa-users', text: 'Data Warga' },
+                    { id: 'angsuran', icon: 'fa-money-check-alt', text: 'Angsuran Warga' },
                     { id: 'keuangan', icon: 'fa-wallet', text: 'Kas RT' },
                     { id: 'pinjaman', icon: 'fa-hand-holding-usd', text: 'Pinjaman Warga' },
                     { id: 'notulen', icon: 'fa-book-open', text: 'Notulen Rapat' },
@@ -667,17 +700,20 @@
                     { id: 'pengumuman', icon: 'fa-bullhorn', text: 'Pengumuman' },
                     { id: 'kritik', icon: 'fa-comments', text: 'Kritik & Saran' },
                     { id: 'peraturan', icon: 'fa-gavel', text: 'Peraturan RT' },
+                    { id: 'keputusan', icon: 'fa-file-signature', text: 'Keputusan RT' },
                     { id: 'setting', icon: 'fa-cog', text: 'Pengaturan Akun' }
                 ];
             } else {
                 menus = [
                     { id: 'beranda', icon: 'fa-home', text: 'Beranda' },
+                    { id: 'angsuran', icon: 'fa-money-check-alt', text: 'Angsuran Warga' },
                     { id: 'keuangan', icon: 'fa-file-invoice-dollar', text: 'Laporan Kas' },
                     { id: 'pinjaman', icon: 'fa-hand-holding-usd', text: 'Pinjaman Warga' },
                     { id: 'notulen', icon: 'fa-book-open', text: 'Notulen Rapat' },
                     { id: 'inventaris', icon: 'fa-boxes', text: 'Inventaris RT' },
                     { id: 'kritik', icon: 'fa-comment-dots', text: 'Kritik & Saran' },
                     { id: 'peraturan', icon: 'fa-gavel', text: 'Peraturan RT' },
+                    { id: 'keputusan', icon: 'fa-file-signature', text: 'Keputusan RT' },
                     { id: 'setting', icon: 'fa-cog', text: 'Pengaturan Akun' }
                 ];
             }
@@ -713,6 +749,7 @@
                 if (menuId === 'dashboard') await window.renderDashboard();
                 else if (menuId === 'beranda') await window.renderBeranda();
                 else if (menuId === 'warga') await window.renderWarga();
+                else if (menuId === 'angsuran') await window.renderAngsuran();
                 else if (menuId === 'keuangan') await window.renderKeuangan();
                 else if (menuId === 'pinjaman') await window.renderPinjaman();
                 else if (menuId === 'notulen') await window.renderNotulen();
@@ -720,6 +757,7 @@
                 else if (menuId === 'pengumuman') await window.renderPengumuman();
                 else if (menuId === 'kritik') await window.renderKritik();
                 else if (menuId === 'peraturan') await window.renderPeraturan();
+                else if (menuId === 'keputusan') await window.renderKeputusan();
                 else if (menuId === 'setting') await window.renderSetting();
             } catch (err) {
                 contentArea.innerHTML = `<div class="text-center text-red-500 p-8"><i class="fas fa-exclamation-triangle text-4xl mb-3"></i><p>Gagal memuat halaman: ${err.message}</p></div>`;
@@ -965,94 +1003,122 @@
 
                     <!-- TABEL DATA WARGA -->
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div class="p-5 border-b border-gray-100 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-gray-50/50">
+                        <div class="p-5 border-b border-gray-100 flex flex-col gap-4 bg-gray-50/50">
                             
-                            <!-- KIRI: Judul dan Tombol Filter -->
-                            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full xl:w-auto z-20">
+                            <!-- BARIS 1: ATAS (Judul) -->
+                            <div class="flex items-center relative z-20">
                                 <h3 class="text-lg font-bold text-gray-800 whitespace-nowrap"><i class="fas fa-list text-indigo-500 mr-2"></i>Database Warga</h3>
-                                <div class="relative w-full sm:w-auto">
-                                    <button id="btn-filter-dropdown" onclick="document.getElementById('filter-dropdown-menu').classList.toggle('hidden')" class="w-full sm:w-auto flex items-center justify-between gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
-                                        <div class="flex items-center"><i class="fas fa-filter text-indigo-500 mr-2"></i> Filter <span id="filter-badge" class="ml-2 bg-indigo-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">${data.length} Data</span></div>
-                                        <i class="fas fa-chevron-down text-xs text-gray-400"></i>
-                                    </button>
-                                    
-                                    <!-- Dropdown Menu Filter -->
-                                    <div id="filter-dropdown-menu" class="hidden absolute left-0 mt-2 w-full sm:w-72 bg-white rounded-xl shadow-xl border border-gray-100 z-50 p-4">
-                                        <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
-                                            <h4 class="text-sm font-bold text-gray-700">Filter Data</h4>
-                                            <button onclick="window.resetFilterWarga()" class="text-xs text-red-500 hover:text-red-700 font-medium">Reset</button>
-                                        </div>
-                                        
-                                        <div class="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1">
-                                            <div>
-                                                <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Status & Gender</label>
-                                                <select id="filter-status" onchange="window.filterWarga()" class="w-full p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none mb-2">
-                                                    <option value="">Semua Status Keluarga</option>
-                                                    <option value="Kepala Keluarga">Kepala Keluarga</option>
-                                                </select>
-                                                <select id="filter-gender" onchange="window.filterWarga()" class="w-full p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none">
-                                                    <option value="">Semua Jenis Kelamin</option>
-                                                    <option value="Laki-laki">Laki-laki</option>
-                                                    <option value="Perempuan">Perempuan</option>
-                                                </select>
-                                            </div>
-                                            
-                                            <div>
-                                                <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Kategori Usia</label>
-                                                <select id="filter-usia" onchange="window.filterWarga()" class="w-full p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none">
-                                                    <option value="">Semua Usia</option>
-                                                    <option value="balita">Balita (0-5 thn)</option>
-                                                    <option value="anak">Anak (6-11 thn)</option>
-                                                    <option value="remaja">Remaja (12-25 thn)</option>
-                                                    <option value="dewasa">Dewasa (26-55 thn)</option>
-                                                    <option value="lansia">Lansia (>55 thn)</option>
-                                                </select>
-                                            </div>
+                            </div>
 
-                                            <div>
-                                                <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Pekerjaan</label>
-                                                <select id="filter-pekerjaan" onchange="window.filterWarga()" class="w-full p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none">
-                                                    <option value="">Semua Pekerjaan</option>
-                                                    <option value="PNS / ASN">PNS / ASN</option>
-                                                    <option value="TNI / POLRI">TNI / POLRI</option>
-                                                    <option value="Karyawan Swasta">Karyawan Swasta</option>
-                                                    <option value="Wiraswasta">Wiraswasta</option>
-                                                    <option value="Buruh Harian Lepas">Buruh Harian Lepas</option>
-                                                    <option value="Pelajar/Mahasiswa">Pelajar / Mahasiswa</option>
-                                                    <option value="Mengurus Rumah Tangga">Ibu Rumah Tangga</option>
-                                                    <option value="Belum/Tidak Bekerja">Belum / Tidak Bekerja</option>
-                                                    <option value="Pensiunan">Pensiunan</option>
-                                                </select>
+                            <!-- BARIS 2: TENGAH (Pencarian, Filter, dan Mutasi) -->
+                            <div class="flex flex-col md:flex-row gap-3 relative z-30">
+                                <!-- Kotak Pencarian -->
+                                <div class="relative w-full flex-1 z-10">
+                                    <input type="text" id="search-warga" oninput="window.filterWarga()" placeholder="Cari nama, NIK, atau Blok Rumah..." class="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm font-medium bg-white text-gray-800">
+                                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-base"></i>
+                                </div>
+                                
+                                <!-- Tombol Filter & Mutasi -->
+                                <div class="flex flex-row gap-2 w-full md:w-auto relative">
+                                    <div class="relative w-full sm:w-auto flex-1 md:flex-none">
+                                        <button id="btn-filter-dropdown" onclick="document.getElementById('filter-dropdown-menu').classList.toggle('hidden')" class="w-full flex items-center justify-between gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium transition shadow-sm relative z-30">
+                                            <div class="flex items-center"><i class="fas fa-filter text-indigo-500 mr-2"></i> Filter <span id="filter-badge" class="ml-2 bg-indigo-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">${data.length} Data</span></div>
+                                            <i class="fas fa-chevron-down text-xs text-gray-400"></i>
+                                        </button>
+                                        
+                                        <!-- Dropdown Menu Filter -->
+                                        <div id="filter-dropdown-menu" class="hidden absolute right-0 mt-2 w-full sm:w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 p-4">
+                                            <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
+                                                <h4 class="text-sm font-bold text-gray-700">Filter Data</h4>
+                                                <button onclick="window.resetFilterWarga()" class="text-xs text-red-500 hover:text-red-700 font-medium">Reset</button>
                                             </div>
                                             
-                                            <div>
-                                                <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Status Tinggal</label>
-                                                <select id="filter-tinggal" onchange="window.filterWarga()" class="w-full p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none">
-                                                    <option value="">Semua Warga</option>
-                                                    <option value="Kontrak">Pengontrak</option>
-                                                </select>
+                                            <div class="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1">
+                                                <div>
+                                                    <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Status & Gender</label>
+                                                    <select id="filter-status" onchange="window.filterWarga()" class="w-full p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none mb-2">
+                                                        <option value="">Semua Status Keluarga</option>
+                                                        <option value="Kepala Keluarga">Kepala Keluarga</option>
+                                                    </select>
+                                                    <select id="filter-gender" onchange="window.filterWarga()" class="w-full p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                                        <option value="">Semua Jenis Kelamin</option>
+                                                        <option value="Laki-laki">Laki-laki</option>
+                                                        <option value="Perempuan">Perempuan</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div>
+                                                    <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Kategori Usia</label>
+                                                    <select id="filter-usia" onchange="window.filterWarga()" class="w-full p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                                        <option value="">Semua Usia</option>
+                                                        <option value="balita">Balita (0-5 thn)</option>
+                                                        <option value="anak">Anak (6-11 thn)</option>
+                                                        <option value="remaja">Remaja (12-25 thn)</option>
+                                                        <option value="dewasa">Dewasa (26-55 thn)</option>
+                                                        <option value="lansia">Lansia (>55 thn)</option>
+                                                    </select>
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Pekerjaan</label>
+                                                    <select id="filter-pekerjaan" onchange="window.filterWarga()" class="w-full p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                                        <option value="">Semua Pekerjaan</option>
+                                                        <option value="PNS / ASN">PNS / ASN</option>
+                                                        <option value="TNI / POLRI">TNI / POLRI</option>
+                                                        <option value="Karyawan Swasta">Karyawan Swasta</option>
+                                                        <option value="Wiraswasta">Wiraswasta</option>
+                                                        <option value="Buruh Harian Lepas">Buruh Harian Lepas</option>
+                                                        <option value="Pelajar/Mahasiswa">Pelajar / Mahasiswa</option>
+                                                        <option value="Mengurus Rumah Tangga">Ibu Rumah Tangga</option>
+                                                        <option value="Belum/Tidak Bekerja">Belum / Tidak Bekerja</option>
+                                                        <option value="Pensiunan">Pensiunan</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div>
+                                                    <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Status Tinggal</label>
+                                                    <select id="filter-tinggal" onchange="window.filterWarga()" class="w-full p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none mb-2">
+                                                        <option value="">Semua Warga</option>
+                                                        <option value="Kontrak">Pengontrak</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div class="mt-4">
+                                                    <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Kesehatan & Bantuan</label>
+                                                    <select id="filter-goldarah" onchange="window.filterWarga()" class="w-full p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none mb-2">
+                                                        <option value="">Semua Gol. Darah</option>
+                                                        <option value="A">Gol. Darah A</option>
+                                                        <option value="B">Gol. Darah B</option>
+                                                        <option value="AB">Gol. Darah AB</option>
+                                                        <option value="O">Gol. Darah O</option>
+                                                        <option value="Tidak Tahu">Tidak Tahu</option>
+                                                    </select>
+                                                    <select id="filter-bantuan" onchange="window.filterWarga()" class="w-full p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                                        <option value="">Semua Bantuan (Bansos)</option>
+                                                        <option value="Tidak Menerima">Tidak Menerima</option>
+                                                        <option value="PKH">PKH</option>
+                                                        <option value="BPNT">BPNT</option>
+                                                        <option value="PIP">PIP</option>
+                                                        <option value="KIS">KIS</option>
+                                                        <option value="BLT">BLT</option>
+                                                    </select>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
+                                    <button onclick="window.openModalMutasi()" class="w-full sm:w-auto flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition whitespace-nowrap relative z-20"><i class="fas fa-exchange-alt mr-2"></i>Buku Mutasi</button>
                                 </div>
-                                <button onclick="window.openModalMutasi()" class="w-full sm:w-auto flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition whitespace-nowrap"><i class="fas fa-exchange-alt mr-2"></i>Buku Mutasi</button>
                             </div>
 
-                            <!-- KANAN: Search & Action Buttons -->
-                            <div class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
-                                <div class="relative w-full sm:w-64 flex-1">
-                                    <input type="text" id="search-warga" oninput="window.filterWarga()" placeholder="Cari nama atau NIK..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                                    <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
-                                </div>
-                                ${currentUser.role === 'admin' ? `
-                                <div class="flex items-center gap-2 w-full sm:w-auto">
-                                    <button onclick="window.printDataWarga()" class="flex-1 sm:flex-none flex items-center justify-center bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition whitespace-nowrap"><i class="fas fa-print mr-2"></i>Cetak</button>
-                                    <button onclick="window.openModalTambahWarga()" class="flex-1 sm:flex-none flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Tambah</button>
-                                    <button onclick="window.openModalImportWarga()" class="flex-1 sm:flex-none flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition whitespace-nowrap"><i class="fas fa-file-excel mr-2"></i>Import</button>
-                                    <button onclick="window.deleteAllWarga()" class="flex-1 sm:flex-none flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition whitespace-nowrap"><i class="fas fa-trash-alt mr-2"></i>Hapus Semua</button>
-                                </div>
-                                ` : ''}
+                            <!-- BARIS 3: BAWAH (Deretan Tombol Aksi) -->
+                            ${currentUser.role === 'admin' ? `
+                            <div class="flex flex-wrap items-center justify-start gap-2 w-full z-10 pt-1">
+                                <button onclick="window.printDataWarga()" class="flex-1 sm:flex-none flex items-center justify-center bg-sky-600 hover:bg-sky-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-sm transition whitespace-nowrap"><i class="fas fa-print mr-2"></i>Cetak</button>
+                                <button onclick="window.openModalTambahWarga()" class="flex-1 sm:flex-none flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-sm transition whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Tambah</button>
+                                <button onclick="window.openModalImportWarga()" class="flex-1 sm:flex-none flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-sm transition whitespace-nowrap"><i class="fas fa-file-excel mr-2"></i>Import</button>
+                                <button onclick="window.deleteAllWarga()" class="flex-1 sm:flex-none flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition whitespace-nowrap"><i class="fas fa-trash-alt mr-2"></i>Hapus Semua</button>
                             </div>
+                            ` : ''}
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
@@ -1108,6 +1174,18 @@
                                     <div><label class="block text-xs font-bold text-gray-600 mb-1">Status Tinggal</label>
                                         <select id="w_tinggal" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
                                             <option value="Tetap">Warga Tetap</option><option value="Kontrak">Pengontrak</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">Golongan Darah</label>
+                                        <select id="w_golDarah" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
+                                            <option value="Tidak Tahu">Tidak Tahu</option><option value="A">A</option><option value="B">B</option><option value="AB">AB</option><option value="O">O</option>
+                                        </select>
+                                    </div>
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">Bantuan Sosial (Bansos)</label>
+                                        <select id="w_bantuan" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
+                                            <option value="Tidak Menerima">Tidak Menerima</option><option value="PKH">PKH</option><option value="BPNT">BPNT</option><option value="PIP">PIP</option><option value="KIS">KIS</option><option value="BLT">BLT</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1306,6 +1384,18 @@
                                         </select>
                                     </div>
                                 </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">Golongan Darah</label>
+                                        <select id="mm_golDarah" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-emerald-500 outline-none">
+                                            <option value="Tidak Tahu">Tidak Tahu</option><option value="A">A</option><option value="B">B</option><option value="AB">AB</option><option value="O">O</option>
+                                        </select>
+                                    </div>
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">Bantuan Sosial (Bansos)</label>
+                                        <select id="mm_bantuan" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-emerald-500 outline-none">
+                                            <option value="Tidak Menerima">Tidak Menerima</option><option value="PKH">PKH</option><option value="BPNT">BPNT</option><option value="PIP">PIP</option><option value="KIS">KIS</option><option value="BLT">BLT</option>
+                                        </select>
+                                    </div>
+                                </div>
                                 <div><label class="block text-xs font-bold text-gray-600 mb-1">No. HP (WA)</label><input type="text" id="mm_hp" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"></div>
                                 
                                 <div class="pt-4 border-t mt-4 flex justify-end gap-3">
@@ -1313,6 +1403,45 @@
                                     <button type="submit" id="btn-save-mutasi-masuk" class="px-5 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition"><i class="fas fa-check mr-2"></i>Simpan Mutasi Masuk</button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MODAL DETAIL WARGA -->
+                <div id="modal-detail-warga" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[99999] flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div class="flex justify-between items-center p-5 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
+                            <h3 class="text-lg font-bold text-indigo-900"><i class="fas fa-id-card mr-2 text-indigo-500"></i>Identitas Lengkap Warga</h3>
+                            <button onclick="document.getElementById('modal-detail-warga').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                        </div>
+                        <div class="p-6 overflow-y-auto custom-scrollbar">
+                            <div class="flex items-center gap-4 mb-6 pb-4 border-b border-gray-100">
+                                <div class="w-16 h-16 bg-indigo-100 text-indigo-500 rounded-full flex items-center justify-center text-3xl font-bold shadow-inner" id="dw_inisial"></div>
+                                <div>
+                                    <h2 class="text-xl font-bold text-gray-800" id="dw_nama"></h2>
+                                    <p class="text-sm font-medium text-gray-500" id="dw_nik_kk"></p>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6">
+                                <div><p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Blok / Alamat</p><p class="text-sm font-semibold text-gray-800 bg-gray-50 p-2.5 rounded-xl border border-gray-100" id="dw_rumah"></p></div>
+                                <div><p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Jenis Kelamin</p><p class="text-sm font-semibold text-gray-800 bg-gray-50 p-2.5 rounded-xl border border-gray-100" id="dw_jk"></p></div>
+                                
+                                <div><p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Tempat, Tgl Lahir</p><p class="text-sm font-semibold text-gray-800 bg-gray-50 p-2.5 rounded-xl border border-gray-100" id="dw_ttl"></p></div>
+                                <div><p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Pekerjaan</p><p class="text-sm font-semibold text-gray-800 bg-gray-50 p-2.5 rounded-xl border border-gray-100" id="dw_pekerjaan"></p></div>
+                                
+                                <div><p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Status Keluarga</p><p class="text-sm font-semibold text-gray-800 bg-gray-50 p-2.5 rounded-xl border border-gray-100" id="dw_statusKeluarga"></p></div>
+                                <div><p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Status Tinggal</p><p class="text-sm font-semibold text-gray-800 bg-gray-50 p-2.5 rounded-xl border border-gray-100" id="dw_statusTinggal"></p></div>
+                                
+                                <div><p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Golongan Darah</p><p class="text-sm font-semibold text-gray-800 bg-gray-50 p-2.5 rounded-xl border border-gray-100" id="dw_golDarah"></p></div>
+                                <div><p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Bantuan Sosial</p><p class="text-sm font-semibold text-gray-800 bg-gray-50 p-2.5 rounded-xl border border-gray-100" id="dw_bantuan"></p></div>
+                                
+                                <div class="col-span-1 md:col-span-2"><p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">No. HP (WhatsApp)</p><p class="text-sm font-semibold text-gray-800 bg-gray-50 p-2.5 rounded-xl border border-gray-100" id="dw_hp"></p></div>
+                            </div>
+                            
+                            <div class="mt-6 flex justify-end">
+                                <button onclick="document.getElementById('modal-detail-warga').classList.add('hidden')" class="px-6 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition shadow-sm">Tutup</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1327,7 +1456,7 @@
                 <tr class="hover:bg-indigo-50/30 transition-colors group">
                     <td class="p-4 align-top"><div class="font-bold text-indigo-700 leading-snug">${w.noRumah}</div></td>
                     <td class="p-4 align-top"><div class="font-medium text-gray-800">${w.noKk}</div><div class="text-xs text-gray-500">${w.nik}</div></td>
-                    <td class="p-4 align-top font-semibold text-gray-800">${w.namaLengkap} <div class="text-[10px] text-gray-400 font-normal mt-0.5">${w.jenisKelamin} • ${w.pekerjaan || '-'}</div></td>
+                    <td class="p-4 align-top font-semibold text-gray-800 ${currentUser.role === 'admin' ? 'cursor-pointer hover:text-blue-600 hover:underline transition' : ''}" ${currentUser.role === 'admin' ? `onclick="window.viewDetailWarga('${w.id}')" title="Klik untuk lihat identitas lengkap"` : ''}>${w.namaLengkap}</td>
                     <td class="p-4 align-top">
                         <div class="text-xs text-gray-600 font-medium mb-1">${w.statusKeluarga}</div>
                         <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${w.statusTinggal === 'Kontrak' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}">${w.statusTinggal === 'Kontrak' ? 'Pengontrak' : 'Tetap'}</span>
@@ -1336,6 +1465,7 @@
                     ${currentUser.role === 'admin' ? `
                     <td class="p-4 align-top text-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <div class="flex items-center justify-center gap-1.5">
+                            <button onclick="window.viewDetailWarga('${w.id}')" class="text-emerald-500 bg-white border border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300 p-2 rounded-lg transition shadow-sm" title="Lihat Identitas Lengkap"><i class="fas fa-eye"></i></button>
                             <button onclick="window.editWarga('${w.id}')" class="text-blue-500 bg-white border border-blue-200 hover:bg-blue-50 hover:border-blue-300 p-2 rounded-lg transition shadow-sm" title="Edit Data"><i class="fas fa-user-edit"></i></button>
                             <button onclick="window.deleteWarga('${w.id}')" class="text-red-500 bg-white border border-red-200 hover:bg-red-50 hover:border-red-300 p-2 rounded-lg transition shadow-sm" title="Hapus Data"><i class="fas fa-trash-alt"></i></button>
                         </div>
@@ -1343,6 +1473,34 @@
                     ` : ''}
                 </tr>
             `).join('');
+        };
+
+        window.viewDetailWarga = function(id) {
+            const w = window.wargaList.find(x => String(x.id) === String(id));
+            if(!w) return;
+            
+            document.getElementById('dw_inisial').innerText = w.namaLengkap.charAt(0).toUpperCase();
+            document.getElementById('dw_nama').innerText = w.namaLengkap;
+            document.getElementById('dw_nik_kk').innerText = `NIK: ${w.nik} | No. KK: ${w.noKk}`;
+            
+            document.getElementById('dw_rumah').innerText = w.noRumah || '-';
+            document.getElementById('dw_jk').innerText = w.jenisKelamin || '-';
+            
+            let tglLahir = w.tanggalLahir;
+            if(tglLahir) {
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                tglLahir = new Date(tglLahir).toLocaleDateString('id-ID', options);
+            } else { tglLahir = '-'; }
+            
+            document.getElementById('dw_ttl').innerText = `${w.tempatLahir || '-'}, ${tglLahir}`;
+            document.getElementById('dw_pekerjaan').innerText = w.pekerjaan || '-';
+            document.getElementById('dw_statusKeluarga').innerText = w.statusKeluarga || '-';
+            document.getElementById('dw_statusTinggal').innerText = w.statusTinggal || '-';
+            document.getElementById('dw_golDarah').innerText = w.golDarah || 'Tidak Tahu';
+            document.getElementById('dw_bantuan').innerText = w.bantuan || 'Tidak Menerima';
+            document.getElementById('dw_hp').innerHTML = w.noHp ? `<a href="https://wa.me/${w.noHp.replace(/^0/,'62')}" target="_blank" class="text-green-600 hover:underline"><i class="fab fa-whatsapp mr-1"></i>${w.noHp}</a>` : '-';
+            
+            document.getElementById('modal-detail-warga').classList.remove('hidden');
         };
 
         window.filterWarga = function() {
@@ -1355,6 +1513,8 @@
                 const fUsia = document.getElementById('filter-usia') ? document.getElementById('filter-usia').value : '';
                 const fPekerjaan = document.getElementById('filter-pekerjaan') ? document.getElementById('filter-pekerjaan').value : '';
                 const fTinggal = document.getElementById('filter-tinggal') ? document.getElementById('filter-tinggal').value : '';
+                const fGolDarah = document.getElementById('filter-goldarah') ? document.getElementById('filter-goldarah').value : '';
+                const fBantuan = document.getElementById('filter-bantuan') ? document.getElementById('filter-bantuan').value : '';
 
                 const tahunIni = new Date().getFullYear();
 
@@ -1373,6 +1533,8 @@
                     if (fGender && w.jenisKelamin !== fGender) return false;
                     if (fPekerjaan && w.pekerjaan !== fPekerjaan) return false;
                     if (fTinggal && w.statusTinggal !== fTinggal) return false;
+                    if (fGolDarah && w.golDarah !== fGolDarah) return false;
+                    if (fBantuan && w.bantuan !== fBantuan) return false;
 
                     if (fUsia) {
                         if (!w.tanggalLahir) return false;
@@ -1399,7 +1561,7 @@
                 const btnDropdown = document.getElementById('btn-filter-dropdown');
                 
                 // Cek apakah ada aktivitas penyaringan (Search atau Filter)
-                let isFilterActive = term !== '' || fStatus !== '' || fGender !== '' || fUsia !== '' || fPekerjaan !== '' || fTinggal !== '';
+                let isFilterActive = term !== '' || fStatus !== '' || fGender !== '' || fUsia !== '' || fPekerjaan !== '' || fTinggal !== '' || fGolDarah !== '' || fBantuan !== '';
 
                 if(badge && btnDropdown) {
                     badge.innerText = filtered.length + " Data"; // Tampilkan jumlah hasil
@@ -1424,6 +1586,8 @@
             if(document.getElementById('filter-usia')) document.getElementById('filter-usia').value = '';
             if(document.getElementById('filter-pekerjaan')) document.getElementById('filter-pekerjaan').value = '';
             if(document.getElementById('filter-tinggal')) document.getElementById('filter-tinggal').value = '';
+            if(document.getElementById('filter-goldarah')) document.getElementById('filter-goldarah').value = '';
+            if(document.getElementById('filter-bantuan')) document.getElementById('filter-bantuan').value = '';
             if(document.getElementById('search-warga')) document.getElementById('search-warga').value = '';
             
             window.filterWarga();
@@ -1547,6 +1711,8 @@
         window.openModalTambahWarga = function() {
             document.getElementById('form-warga').reset();
             document.getElementById('w_id').value = '';
+            if(document.getElementById('w_golDarah')) document.getElementById('w_golDarah').value = 'Tidak Tahu';
+            if(document.getElementById('w_bantuan')) document.getElementById('w_bantuan').value = 'Tidak Menerima';
             document.getElementById('modal-warga-title').innerHTML = "Tambah Data Warga";
             document.getElementById('btn-save-warga').innerHTML = "Simpan Data";
             const btnFamily = document.getElementById('btn-add-family');
@@ -1568,6 +1734,8 @@
             document.getElementById('w_tempatLahir').value = w.tempatLahir; document.getElementById('w_tglLahir').value = w.tanggalLahir ? new Date(w.tanggalLahir).toISOString().split('T')[0] : '';
             document.getElementById('w_pekerjaan').value = w.pekerjaan || ''; document.getElementById('w_status').value = w.statusKeluarga;
             document.getElementById('w_tinggal').value = w.statusTinggal; document.getElementById('w_hp').value = w.noHp || '';
+            if(document.getElementById('w_golDarah')) document.getElementById('w_golDarah').value = w.golDarah || 'Tidak Tahu';
+            if(document.getElementById('w_bantuan')) document.getElementById('w_bantuan').value = w.bantuan || 'Tidak Menerima';
             document.getElementById('modal-warga-title').innerHTML = '<i class="fas fa-user-edit text-blue-500 mr-2"></i>Edit Data Warga';
             document.getElementById('btn-save-warga').innerHTML = "Simpan Perubahan";
             
@@ -1626,7 +1794,9 @@
                 pekerjaan: pekerjaan,
                 statusKeluarga: document.getElementById('w_status').value, 
                 statusTinggal: document.getElementById('w_tinggal').value, 
-                noHp: document.getElementById('w_hp').value
+                noHp: document.getElementById('w_hp').value,
+                golDarah: document.getElementById('w_golDarah') ? document.getElementById('w_golDarah').value : 'Tidak Tahu',
+                bantuan: document.getElementById('w_bantuan') ? document.getElementById('w_bantuan').value : 'Tidak Menerima'
             };
 
             const actionName = id ? 'updateWarga' : 'addWarga';
@@ -1741,6 +1911,8 @@
         window.openFormMutasiMasuk = function() {
             document.getElementById('form-mutasi-masuk').reset();
             document.getElementById('mm_tanggal').value = new Date().toISOString().split('T')[0];
+            if(document.getElementById('mm_golDarah')) document.getElementById('mm_golDarah').value = 'Tidak Tahu';
+            if(document.getElementById('mm_bantuan')) document.getElementById('mm_bantuan').value = 'Tidak Menerima';
             document.getElementById('modal-form-mutasi-masuk').classList.remove('hidden');
         };
 
@@ -1763,7 +1935,9 @@
                 pekerjaan: document.getElementById('mm_pekerjaan').value,
                 statusKeluarga: document.getElementById('mm_status').value,
                 statusTinggal: document.getElementById('mm_tinggal').value,
-                noHp: document.getElementById('mm_hp').value.trim()
+                noHp: document.getElementById('mm_hp').value.trim(),
+                golDarah: document.getElementById('mm_golDarah') ? document.getElementById('mm_golDarah').value : 'Tidak Tahu',
+                bantuan: document.getElementById('mm_bantuan') ? document.getElementById('mm_bantuan').value : 'Tidak Menerima'
             };
 
             const asal = document.getElementById('mm_asal').value.trim();
@@ -2113,6 +2287,7 @@
 
             let globalSisa = Math.max(0, totalGlobalPinjam - totalGlobalAngsur);
             window.pinjamanDataGlobal = data;
+            window.currentPinjamanSummary = summaryArray;
 
             let html = `
                 <div class="fade-in font-sans">
@@ -2120,25 +2295,23 @@
                         <div class="p-6 md:p-8 text-center relative z-10"><p class="text-orange-100 text-sm font-bold uppercase tracking-widest mb-3">Total Piutang Berjalan</p><h2 class="text-4xl md:text-5xl font-black text-white">${window.formatRp(globalSisa)}</h2></div>
                     </div>
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div class="p-5 border-b bg-gray-50/50 flex justify-between items-center"><h3 class="text-lg font-bold text-gray-800"><i class="fas fa-users text-indigo-500 mr-2"></i>Daftar Peminjam</h3><button onclick="window.openModalPinjaman()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition"><i class="fas fa-plus mr-1"></i> Peminjam Baru</button></div>
+                        <div class="p-5 border-b bg-gray-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <h3 class="text-lg font-bold text-gray-800 whitespace-nowrap"><i class="fas fa-users text-indigo-500 mr-2"></i>Daftar Peminjam</h3>
+                            <div class="relative w-full sm:w-64 md:w-72">
+                                <input type="text" id="search-pinjaman" oninput="window.filterPinjaman()" placeholder="Cari nama atau blok..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
+                            </div>
+                        </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead><tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider"><th class="p-4 border-b">Warga</th><th class="p-4 border-b text-center">Status</th><th class="p-4 border-b text-right">Sisa Hutang</th><th class="p-4 border-b text-center">Aksi</th></tr></thead>
-                                <tbody class="text-sm divide-y divide-gray-100">
-                                    ${summaryArray.map(s => `
-                                        <tr class="hover:bg-indigo-50/30 group">
-                                            <td class="p-4 cursor-pointer" onclick="window.viewDetailPeminjam('${s.nama}', '${s.noRumah}')"><div class="font-bold text-gray-800 group-hover:text-indigo-600">${s.nama}</div><div class="text-xs text-gray-500"><i class="fas fa-home mr-1"></i>Blok: ${s.noRumah}</div></td>
-                                            <td class="p-4 text-center cursor-pointer" onclick="window.viewDetailPeminjam('${s.nama}', '${s.noRumah}')"><span class="text-[10px] font-bold px-3 py-1 rounded-full ${s.status === 'Lunas' ? 'bg-green-100 text-green-700' : 'bg-rose-100 text-rose-700'}">${s.status}</span></td>
-                                            <td class="p-4 text-right font-bold text-gray-800 cursor-pointer" onclick="window.viewDetailPeminjam('${s.nama}', '${s.noRumah}')">${window.formatRp(s.sisaHutang)}</td>
-                                            <td class="p-4 text-center whitespace-nowrap">
-                                                <button onclick="window.viewDetailPeminjam('${s.nama}', '${s.noRumah}')" class="text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg text-xs font-bold mr-1" title="Rincian"><i class="fas fa-list"></i></button>
-                                                <button onclick="window.editPeminjamGlobal('${s.nama}', '${s.noRumah}')" class="text-blue-500 bg-blue-50 px-3 py-1.5 rounded-lg text-xs font-bold mr-1" title="Edit Nama/Blok Massal"><i class="fas fa-edit"></i></button>
-                                                <button onclick="window.deletePeminjamGlobal('${s.nama}', '${s.noRumah}')" class="text-red-500 bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold" title="Hapus Seluruh Riwayat Orang Ini"><i class="fas fa-trash-alt"></i></button>
-                                            </td>
-                                        </tr>
-                                    `).join('')}
+                                <tbody class="text-sm divide-y divide-gray-100" id="pinjaman-tbody">
+                                    ${window.generatePinjamanRows(summaryArray)}
                                 </tbody>
                             </table>
+                        </div>
+                        <div class="p-5 border-t border-gray-100 bg-gray-50/30 flex justify-end">
+                            <button onclick="window.openModalPinjaman()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md transition whitespace-nowrap flex items-center justify-center"><i class="fas fa-plus mr-2"></i> Peminjam Baru</button>
                         </div>
                     </div>
                 </div>
@@ -2213,6 +2386,35 @@
                 </div>
             `;
             document.getElementById('content-area').innerHTML = html;
+        };
+
+        window.generatePinjamanRows = function(summaryArray) {
+            if(summaryArray.length === 0) return '<tr><td colspan="4" class="p-8 text-center text-gray-500 italic">Belum ada data peminjam.</td></tr>';
+            return summaryArray.map(s => `
+                <tr class="hover:bg-indigo-50/30 group">
+                    <td class="p-4 cursor-pointer" onclick="window.viewDetailPeminjam('${s.nama}', '${s.noRumah}')"><div class="font-bold text-gray-800 group-hover:text-indigo-600">${s.nama}</div><div class="text-xs text-gray-500"><i class="fas fa-home mr-1"></i>Blok: ${s.noRumah}</div></td>
+                    <td class="p-4 text-center cursor-pointer" onclick="window.viewDetailPeminjam('${s.nama}', '${s.noRumah}')"><span class="text-[10px] font-bold px-3 py-1 rounded-full ${s.status === 'Lunas' ? 'bg-green-100 text-green-700' : 'bg-rose-100 text-rose-700'}">${s.status}</span></td>
+                    <td class="p-4 text-right font-bold text-gray-800 cursor-pointer" onclick="window.viewDetailPeminjam('${s.nama}', '${s.noRumah}')">${window.formatRp(s.sisaHutang)}</td>
+                    <td class="p-4 text-center whitespace-nowrap">
+                        <button onclick="window.viewDetailPeminjam('${s.nama}', '${s.noRumah}')" class="text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg text-xs font-bold mr-1" title="Rincian"><i class="fas fa-list"></i></button>
+                        <button onclick="window.editPeminjamGlobal('${s.nama}', '${s.noRumah}')" class="text-blue-500 bg-blue-50 px-3 py-1.5 rounded-lg text-xs font-bold mr-1" title="Edit Nama/Blok Massal"><i class="fas fa-edit"></i></button>
+                        <button onclick="window.deletePeminjamGlobal('${s.nama}', '${s.noRumah}')" class="text-red-500 bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold" title="Hapus Seluruh Riwayat Orang Ini"><i class="fas fa-trash-alt"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        window.filterPinjaman = function() {
+            try {
+                const term = document.getElementById('search-pinjaman').value.toLowerCase().trim();
+                const filtered = (window.currentPinjamanSummary || []).filter(s => {
+                    const nama = s.nama ? String(s.nama).toLowerCase() : '';
+                    const blok = s.noRumah ? String(s.noRumah).toLowerCase() : '';
+                    return nama.includes(term) || blok.includes(term);
+                });
+                const tbody = document.getElementById('pinjaman-tbody');
+                if(tbody) tbody.innerHTML = window.generatePinjamanRows(filtered);
+            } catch(e) { console.error(e); }
         };
 
         window.handleSelectPeminjam = function(val) {
@@ -2416,7 +2618,488 @@
         };
 
         // ==========================================
-        // RENDERER: INVENTARIS
+        // FUNGSI ANGSURAN WARGA
+        // ==========================================
+        window.renderAngsuran = async function(mode = 'laporan') {
+            document.getElementById('page-title').innerText = "Laporan Angsuran / Iuran Warga";
+            
+            // Set default month ke bulan ini (Contoh: "2026-08") jika belum ada
+            if (!window.currentAngsuranMonth) {
+                window.currentAngsuranMonth = new Date().toISOString().substring(0, 7);
+            }
+            const selectedMonth = window.currentAngsuranMonth;
+
+            const res = await window.fetchApp('getAngsuran');
+            const data = res.data || [];
+            
+            // Ambil data warga untuk disaring
+            const resWarga = await window.fetchApp('getWarga');
+            const wargaList = resWarga.data || [];
+            window.kepalaKeluargaList = wargaList.filter(w => w.statusKeluarga === 'Kepala Keluarga');
+            
+            // Proteksi privasi warga: jika login sebagai warga, hanya tampilkan tagihan rumahnya sendiri
+            if (currentUser.role === 'warga') {
+                window.kepalaKeluargaList = window.kepalaKeluargaList.filter(w => w.noRumah === currentUser.noRumah);
+            }
+
+            let html = '<div class="fade-in font-sans">';
+
+            if (mode === 'laporan') {
+                let totalTerkumpul = 0, lunasCount = 0, belumCount = 0;
+                let reportData = {};
+
+                // 1. Masukkan SEMUA Kepala Keluarga ke dalam laporan dengan status awal "Belum Bayar" (0)
+                window.kepalaKeluargaList.forEach(kk => {
+                    reportData[kk.namaLengkap + '|' + kk.noRumah] = { namaWarga: kk.namaLengkap, noRumah: kk.noRumah, nominal: 0, status: 'Belum Bayar', keterangan: [] };
+                });
+
+                // 2. Kalkulasikan pembayaran HANYA pada bulan yang dipilih
+                data.forEach(a => {
+                    if (a.tanggal.substring(0, 7) === selectedMonth) {
+                        let key = a.namaWarga + '|' + a.noRumah;
+                        if (reportData[key]) {
+                            reportData[key].nominal += Number(a.nominal);
+                            if (a.keterangan) reportData[key].keterangan.push(a.keterangan);
+                            totalTerkumpul += Number(a.nominal);
+                        } else {
+                            // Antisipasi warga/KK lama yang sudah pindah/mutasi tapi masih ada historinya
+                            reportData[key] = { namaWarga: a.namaWarga, noRumah: a.noRumah, nominal: Number(a.nominal), status: '', keterangan: a.keterangan ? [a.keterangan] : [] };
+                            totalTerkumpul += Number(a.nominal);
+                        }
+                    }
+                });
+
+                // 3. Tentukan Status Berdasarkan Nominal
+                let reportArray = Object.values(reportData);
+                reportArray.forEach(r => {
+                    if (r.nominal >= 30000) { r.status = 'Lunas'; lunasCount++; }
+                    else if (r.nominal > 0) { r.status = 'Kurang / Tunggakan'; belumCount++; }
+                    else { r.status = 'Belum Bayar'; belumCount++; }
+                });
+                
+                // Urutkan tabel secara rapi berdasarkan Nomor Rumah (Blok)
+                reportArray.sort((a, b) => a.noRumah.localeCompare(b.noRumah));
+                
+                // Simpan ke variabel global agar bisa di-filter oleh pencarian
+                window.currentReportArrayAngsuran = reportArray;
+
+                // Konversi format YYYY-MM ke nama bulan yang bersahabat (Ex: Agustus 2026)
+                const dt = new Date(selectedMonth + "-01");
+                const namaBulan = dt.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+
+                html += `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-sm text-white p-5 flex items-center justify-between">
+                            <div><p class="text-teal-100 text-xs font-bold uppercase tracking-wider mb-1">Terkumpul ${namaBulan}</p><h3 class="text-3xl font-black">${window.formatRp(totalTerkumpul)}</h3></div>
+                            <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-2xl shadow-inner"><i class="fas fa-wallet"></i></div>
+                        </div>
+                        <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-sm text-white p-5 flex items-center justify-between">
+                            <div><p class="text-blue-100 text-xs font-bold uppercase tracking-wider mb-1">Status Sudah Bayar</p><h3 class="text-3xl font-black">${lunasCount} <span class="text-sm font-normal opacity-80">KK</span></h3></div>
+                            <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-2xl shadow-inner"><i class="fas fa-check-circle"></i></div>
+                        </div>
+                        <div class="bg-gradient-to-br from-rose-500 to-red-600 rounded-2xl shadow-sm text-white p-5 flex items-center justify-between">
+                            <div><p class="text-rose-100 text-xs font-bold uppercase tracking-wider mb-1">Belum Lunas / Tunggakan</p><h3 class="text-3xl font-black">${belumCount} <span class="text-sm font-normal opacity-80">KK</span></h3></div>
+                            <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-2xl shadow-inner"><i class="fas fa-times-circle"></i></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                        <div class="p-5 border-b border-gray-100 bg-gray-50/50 flex flex-col gap-4">
+                            <!-- Baris 1: Filter Bulan dan Tombol Aksi -->
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                <div class="flex items-center gap-3 w-full md:w-auto">
+                                    <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-calendar-check text-emerald-500 mr-2"></i>Laporan:</h3>
+                                    <input type="month" id="filter_bulan_angsuran" value="${selectedMonth}" onchange="window.currentAngsuranMonth = this.value; window.renderAngsuran('laporan')" class="p-2 border border-gray-200 rounded-lg text-sm font-bold text-indigo-700 bg-white shadow-sm focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer flex-1 md:flex-none">
+                                </div>
+                                <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                                    <button onclick="window.renderAngsuran('riwayat')" class="flex-1 md:flex-none bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition"><i class="fas fa-history mr-2"></i>Riwayat Semua</button>
+                                    ${currentUser.role === 'admin' ? `<button onclick="window.openModalAngsuran()" class="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition"><i class="fas fa-plus mr-2"></i>Input Bebas</button>` : ''}
+                                </div>
+                            </div>
+                            
+                            <!-- Baris 2: Pencarian Nama/Blok -->
+                            <div class="relative w-full">
+                                <input type="text" id="search_laporan_angsuran" oninput="window.filterLaporanAngsuran()" placeholder="Cari nama Kepala Keluarga atau blok rumah..." class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm font-medium">
+                                <i class="fas fa-search absolute left-4 top-3.5 text-gray-400"></i>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                                        <th class="p-4 border-b font-semibold w-24">Blok</th>
+                                        <th class="p-4 border-b font-semibold">Nama Kepala Keluarga</th>
+                                        <th class="p-4 border-b font-semibold text-center">Status Laporan</th>
+                                        <th class="p-4 border-b font-semibold text-right">Total Bayar</th>
+                                        ${currentUser.role === 'admin' ? '<th class="p-4 border-b font-semibold text-center w-28">Aksi</th>' : ''}
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm divide-y divide-gray-100" id="laporan_angsuran_tbody">
+                                    ${window.generateLaporanAngsuranRows ? window.generateLaporanAngsuranRows(reportArray) : ''}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            } else { 
+                // Mode Riwayat Semua Transaksi
+                let totalSemua = 0;
+                data.forEach(item => totalSemua += Number(item.nominal));
+
+                html += `
+                    <div class="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl shadow-xl overflow-hidden mb-6 relative p-6 md:p-8 text-center">
+                        <div class="absolute -right-10 -top-10 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl"></div>
+                        <p class="text-teal-100 text-sm font-medium uppercase tracking-widest mb-2 relative z-10">Total Riwayat Dana Terkumpul Keseluruhan</p>
+                        <h2 class="text-4xl md:text-5xl font-black text-white drop-shadow-md relative z-10">${window.formatRp(totalSemua)}</h2>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                        <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                            <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-history text-indigo-500 mr-2"></i>Seluruh Riwayat Transaksi</h3>
+                            <button onclick="window.renderAngsuran('laporan')" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition border border-blue-200"><i class="fas fa-arrow-left mr-2"></i>Kembali ke Laporan</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                                        <th class="p-4 border-b font-semibold">Tanggal</th>
+                                        <th class="p-4 border-b font-semibold">Nama (Kepala Keluarga)</th>
+                                        <th class="p-4 border-b font-semibold">Keterangan</th>
+                                        <th class="p-4 border-b font-semibold text-right">Nominal</th>
+                                        ${currentUser.role === 'admin' ? '<th class="p-4 border-b font-semibold text-center w-24">Aksi</th>' : ''}
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm divide-y divide-gray-100">
+                                    ${data.length === 0 ? '<tr><td colspan="5" class="p-8 text-center text-gray-500 italic">Belum ada riwayat angsuran.</td></tr>' :
+                                    data.reverse().map(a => `
+                                        <tr class="hover:bg-gray-50 transition-colors group">
+                                            <td class="p-4 text-gray-500 whitespace-nowrap"><i class="far fa-calendar-alt mr-2"></i>${a.tanggal}</td>
+                                            <td class="p-4 align-top">
+                                                <div class="font-bold text-gray-800">${a.namaWarga}</div>
+                                                <div class="text-[10px] text-gray-500 font-bold px-2 py-0.5 rounded bg-gray-100 inline-block mt-1 border border-gray-200">Blok: ${a.noRumah}</div>
+                                            </td>
+                                            <td class="p-4 text-gray-600">${a.keterangan || '-'}</td>
+                                            <td class="p-4 text-right font-bold text-emerald-600 whitespace-nowrap">${window.formatRp(a.nominal)}</td>
+                                            ${currentUser.role === 'admin' ? `
+                                            <td class="p-4 text-center opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                                <div class="flex items-center justify-center gap-1.5">
+                                                    <button onclick="window.editAngsuran('${a.id}')" class="text-blue-500 bg-white border border-blue-200 hover:bg-blue-50 hover:border-blue-300 p-1.5 rounded-lg transition"><i class="fas fa-edit"></i></button>
+                                                    <button onclick="window.deleteAngsuran('${a.id}')" class="text-red-500 bg-white border border-red-200 hover:bg-red-50 hover:border-red-300 p-1.5 rounded-lg transition"><i class="fas fa-trash-alt"></i></button>
+                                                </div>
+                                            </td>
+                                            ` : ''}
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `</div>`;
+            
+            // Modal Section (Hanya di-render jika role-nya admin)
+            if (currentUser.role === 'admin') {
+                html += `
+                <div id="modal-angsuran" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
+                        <div class="flex justify-between items-center p-5 border-b bg-emerald-50">
+                            <h3 class="text-lg font-bold text-emerald-800" id="form_title_angsuran">Catat Angsuran Warga</h3>
+                            <button onclick="document.getElementById('modal-angsuran').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                        </div>
+                        <div class="p-6">
+                            <div class="mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-700 text-xs rounded-xl flex items-start gap-2" id="ang_info_box">
+                                <i class="fas fa-info-circle mt-0.5"></i>
+                                <p>Hanya warga dengan status <strong>Kepala Keluarga</strong> yang muncul pada form pencarian di bawah ini.</p>
+                            </div>
+                            <form onsubmit="window.submitAngsuran(event)" class="space-y-4">
+                                <input type="hidden" id="ang_id">
+                                <div><label class="block text-xs font-bold text-gray-600 mb-1">Tanggal Bayar<span class="text-red-500">*</span></label><input type="date" id="ang_tanggal" required class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"></div>
+                                
+                                <div class="relative" id="div_ang_search">
+                                    <label class="block text-xs font-bold text-gray-600 mb-1">Cari Kepala Keluarga <span class="text-red-500">*</span></label>
+                                    <input type="text" id="ang_search" list="ang_datalist" onchange="window.handleSelectAngsuran(this.value)" placeholder="Ketik nama Kepala Keluarga..." class="w-full p-2.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <datalist id="ang_datalist">
+                                        ${window.kepalaKeluargaList.map(w => `<option value="${w.namaLengkap} (${w.noRumah})"></option>`).join('')}
+                                    </datalist>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">Nama Valid</label><input type="text" id="ang_nama" required readonly class="w-full p-2.5 border rounded-lg text-sm bg-gray-100 text-gray-500"></div>
+                                    <div><label class="block text-xs font-bold text-gray-600 mb-1">Blok Rumah</label><input type="text" id="ang_rumah" required readonly class="w-full p-2.5 border rounded-lg text-sm bg-gray-100 text-gray-500"></div>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-600 mb-1">Nominal Angsuran (Rp) <span class="text-red-500">*</span></label>
+                                    <input type="number" id="ang_nominal" required min="1" value="30000" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none font-bold">
+                                    <p class="text-[10px] text-gray-400 mt-1">*Nominal baku 30.000, silakan ubah jika jumlahnya berbeda.</p>
+                                </div>
+                                <div><label class="block text-xs font-bold text-gray-600 mb-1">Keterangan / Pembayaran Bulan</label><textarea id="ang_ket" rows="2" placeholder="Contoh: Iuran Bulanan Agustus" class="w-full p-2.5 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"></textarea></div>
+                                
+                                <div class="pt-4 border-t mt-4 flex justify-end gap-3">
+                                    <button type="button" onclick="document.getElementById('modal-angsuran').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition">Batal</button>
+                                    <button type="submit" id="btn-save-angsuran" class="px-5 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition">Simpan Angsuran</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }
+
+            // MODAL DETAIL RIWAYAT ANGSURAN WARGA (Berlaku untuk Admin & Warga)
+            html += `
+                <div id="modal-detail-angsuran" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+                        <div class="flex justify-between items-center p-5 border-b bg-gray-50">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-800">Riwayat Pembayaran</h3>
+                                <p class="text-sm text-indigo-600 font-bold" id="detail_title_angsuran_warga"></p>
+                            </div>
+                            <button onclick="document.getElementById('modal-detail-angsuran').classList.add('hidden')"><i class="fas fa-times text-xl text-gray-500 hover:text-red-500 transition"></i></button>
+                        </div>
+                        <div class="p-4 overflow-y-auto custom-scrollbar">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-100 text-gray-500 text-xs uppercase tracking-wider">
+                                        <th class="p-3 border-b font-semibold">Tanggal</th>
+                                        <th class="p-3 border-b font-semibold">Keterangan</th>
+                                        <th class="p-3 border-b font-semibold text-right">Nominal</th>
+                                        ${currentUser.role === 'admin' ? '<th class="p-3 border-b font-semibold text-center w-24">Aksi</th>' : ''}
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm divide-y divide-gray-100" id="detail_angsuran_tbody">
+                                    <!-- Rows injected by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('content-area').innerHTML = html;
+        };
+
+        window.generateLaporanAngsuranRows = function(dataArray) {
+            if (dataArray.length === 0) return '<tr><td colspan="5" class="p-8 text-center text-gray-500 italic">Data kosong atau tidak ditemukan.</td></tr>';
+            return dataArray.map(r => `
+                <tr class="hover:bg-gray-50 transition-colors group">
+                    <td class="p-4 align-middle font-black text-indigo-700 text-base">${r.noRumah}</td>
+                    <td class="p-4 align-middle cursor-pointer" onclick="window.viewRiwayatAngsuranWarga('${r.namaWarga}', '${r.noRumah}')" title="Klik untuk lihat rincian riwayat pembayaran">
+                        <div class="font-bold text-blue-600 hover:text-blue-800 flex items-center gap-2 group-hover:underline">
+                            ${r.namaWarga} <i class="fas fa-external-link-alt text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                        </div>
+                        ${r.keterangan.length > 0 ? `<div class="text-[10px] text-gray-500 mt-1 italic line-clamp-1">${r.keterangan.join(', ')}</div>` : ''}
+                    </td>
+                    <td class="p-4 text-center align-middle">
+                        <span class="text-[10px] font-bold px-3 py-1 rounded-full ${r.status === 'Lunas' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : r.status === 'Belum Bayar' ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-amber-100 text-amber-700 border-amber-200'} shadow-sm border">
+                            ${r.status === 'Lunas' ? '<i class="fas fa-check-circle mr-1"></i> ' : r.status === 'Belum Bayar' ? '<i class="fas fa-times-circle mr-1"></i> ' : '<i class="fas fa-exclamation-triangle mr-1"></i> '}${r.status}
+                        </span>
+                    </td>
+                    <td class="p-4 text-right font-bold ${r.nominal >= 30000 ? 'text-emerald-600' : r.nominal > 0 ? 'text-amber-600' : 'text-rose-400'} align-middle whitespace-nowrap">${window.formatRp(r.nominal)}</td>
+                    ${currentUser.role === 'admin' ? `
+                    <td class="p-4 text-center align-middle">
+                        ${r.status !== 'Lunas' ? `
+                            <button onclick="window.openModalAngsuranQuick('${r.namaWarga}', '${r.noRumah}')" class="text-white bg-blue-500 hover:bg-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold w-full transition shadow-sm border border-blue-600"><i class="fas fa-cash-register mr-1"></i> Bayar</button>
+                        ` : `<span class="text-xs text-emerald-500 font-bold italic"><i class="fas fa-check"></i> Selesai</span>`}
+                    </td>
+                    ` : ''}
+                </tr>
+            `).join('');
+        };
+
+        window.filterLaporanAngsuran = function() {
+            try {
+                const searchEl = document.getElementById('search_laporan_angsuran');
+                const term = searchEl ? searchEl.value.toLowerCase().trim() : '';
+                
+                if (!window.currentReportArrayAngsuran) return;
+                
+                const filtered = window.currentReportArrayAngsuran.filter(r => {
+                    const nama = r.namaWarga ? String(r.namaWarga).toLowerCase() : '';
+                    const blok = r.noRumah ? String(r.noRumah).toLowerCase() : '';
+                    return nama.includes(term) || blok.includes(term);
+                });
+                
+                const tbody = document.getElementById('laporan_angsuran_tbody');
+                if (tbody) tbody.innerHTML = window.generateLaporanAngsuranRows(filtered);
+            } catch (e) {
+                console.error("Filter Laporan Error:", e);
+            }
+        };
+
+        window.handleSelectAngsuran = function(val) {
+            if(!val) return;
+            const match = val.match(/^(.*) \((.*)\)$/);
+            if(match) {
+                document.getElementById('ang_nama').value = match[1];
+                document.getElementById('ang_rumah').value = match[2];
+            } else {
+                document.getElementById('ang_nama').value = '';
+                document.getElementById('ang_rumah').value = '';
+            }
+        };
+
+        window.openModalAngsuran = function() {
+            document.getElementById('ang_id').value = '';
+            document.getElementById('ang_tanggal').value = new Date().toISOString().split('T')[0];
+            document.getElementById('ang_search').value = '';
+            document.getElementById('ang_nama').value = '';
+            document.getElementById('ang_rumah').value = '';
+            document.getElementById('ang_nominal').value = '30000';
+            document.getElementById('ang_ket').value = '';
+            
+            document.getElementById('div_ang_search').classList.remove('hidden');
+            document.getElementById('ang_info_box').classList.remove('hidden');
+            document.getElementById('form_title_angsuran').innerHTML = '<i class="fas fa-plus-circle text-emerald-500 mr-2"></i>Catat Angsuran Bebas';
+            document.getElementById('btn-save-angsuran').innerText = 'Simpan Angsuran';
+            document.getElementById('modal-angsuran').classList.remove('hidden');
+        };
+
+        // Fungsi Baru: Tombol bayar khusus yang otomatis mengisi nama dan rumah
+        window.openModalAngsuranQuick = function(nama, rumah) {
+            window.openModalAngsuran(); // Panggil fungsi utama dulu untuk reset isian
+            
+            // Tulis dan Sembunyikan Pencarian Manual
+            document.getElementById('div_ang_search').classList.add('hidden'); 
+            document.getElementById('ang_info_box').classList.add('hidden');
+            document.getElementById('ang_nama').value = nama;
+            document.getElementById('ang_rumah').value = rumah;
+            
+            // Buat keterangan otomatis berdasarkan bulan yang dipilih di laporan
+            const selectedMonth = window.currentAngsuranMonth || new Date().toISOString().substring(0, 7);
+            const dt = new Date(selectedMonth + "-01");
+            const namaBulan = dt.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+            document.getElementById('ang_ket').value = "Iuran Bulanan " + namaBulan;
+            
+            document.getElementById('form_title_angsuran').innerHTML = '<i class="fas fa-bolt text-emerald-500 mr-2"></i>Bayar Angsuran Cepat';
+        };
+
+        window.editAngsuran = async function(id) {
+            const res = await window.fetchApp('getAngsuran');
+            const data = res.data || [];
+            const item = data.find(x => String(x.id) === String(id));
+            if(!item) return;
+
+            document.getElementById('ang_id').value = item.id;
+            document.getElementById('ang_tanggal').value = item.tanggal;
+            document.getElementById('ang_nama').value = item.namaWarga;
+            document.getElementById('ang_rumah').value = item.noRumah;
+            document.getElementById('ang_nominal').value = item.nominal;
+            document.getElementById('ang_ket').value = item.keterangan || '';
+            
+            document.getElementById('div_ang_search').classList.add('hidden'); 
+            document.getElementById('ang_info_box').classList.add('hidden');
+            document.getElementById('form_title_angsuran').innerHTML = '<i class="fas fa-edit text-emerald-500 mr-2"></i>Edit Riwayat Transaksi';
+            document.getElementById('btn-save-angsuran').innerText = 'Simpan Perubahan';
+            document.getElementById('modal-angsuran').classList.remove('hidden');
+        };
+
+        window.submitAngsuran = async function(e) {
+            e.preventDefault();
+            const nama = document.getElementById('ang_nama').value;
+            const rumah = document.getElementById('ang_rumah').value;
+            
+            if(!nama || !rumah) {
+                window.showToast("Nama/Blok rumah tidak valid. Silakan isi lewat pencarian Kepala Keluarga!", "error");
+                return;
+            }
+
+            const btn = document.getElementById('btn-save-angsuran');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...'; 
+            btn.disabled = true;
+
+            const id = document.getElementById('ang_id').value;
+            const payload = {
+                tanggal: document.getElementById('ang_tanggal').value,
+                namaWarga: nama,
+                noRumah: rumah,
+                nominal: document.getElementById('ang_nominal').value,
+                keterangan: document.getElementById('ang_ket').value
+            };
+
+            const actionName = id ? 'updateAngsuran' : 'addAngsuran';
+            const res = await window.fetchApp(actionName, { id: id, data: payload });
+            
+            if (res.success) { 
+                window.showToast(id ? "Riwayat diperbarui!" : "Pembayaran berhasil dicatat!", "success"); 
+                window.renderAngsuran('laporan'); // Secara default arahkan kembali ke Laporan
+                document.getElementById('modal-angsuran').classList.add('hidden');
+            } else { 
+                window.showToast(res.message, 'error'); 
+                btn.innerHTML = originalText; 
+                btn.disabled = false; 
+            }
+        };
+
+        window.deleteAngsuran = function(id) {
+            window.showConfirmModal("Hapus Riwayat", "Yakin ingin menghapus catatan pembayaran angsuran ini?", () => {
+                window.fetchApp('deleteAngsuran', { id: String(id) }).then(res => {
+                    if (res.success) { window.showToast("Data dihapus!", "success"); window.renderAngsuran('riwayat'); }
+                });
+            });
+        };
+
+        // FUNGSI BARU: MENAMPILKAN DETAIL RIWAYAT ANGSURAN WARGA SAAT NAMA DIKLIK
+        window.viewRiwayatAngsuranWarga = async function(nama, rumah) {
+            const res = await window.fetchApp('getAngsuran');
+            const data = res.data || [];
+            
+            // Saring hanya untuk warga yang diklik
+            const filteredData = data.filter(a => a.namaWarga === nama && a.noRumah === rumah);
+            
+            // Urutkan dari yang terbaru (Descending)
+            filteredData.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+
+            document.getElementById('detail_title_angsuran_warga').innerText = `${nama} (Blok ${rumah})`;
+
+            let tbodyHtml = '';
+            if (filteredData.length === 0) {
+                tbodyHtml = '<tr><td colspan="4" class="p-8 text-center text-gray-500 italic">Belum ada catatan riwayat pembayaran.</td></tr>';
+            } else {
+                tbodyHtml = filteredData.map(a => `
+                    <tr class="hover:bg-gray-50 group transition-colors">
+                        <td class="p-3 align-top whitespace-nowrap text-gray-600"><i class="far fa-calendar-alt mr-2"></i>${a.tanggal}</td>
+                        <td class="p-3 align-top text-gray-800">${a.keterangan || '-'}</td>
+                        <td class="p-3 align-top text-right font-bold text-emerald-600 whitespace-nowrap">${window.formatRp(a.nominal)}</td>
+                        ${currentUser.role === 'admin' ? `
+                        <td class="p-3 text-center align-top opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            <button onclick="window.editAngsuranLgsg('${a.id}')" class="text-blue-500 bg-blue-50 hover:bg-blue-100 p-1.5 rounded mr-1 transition"><i class="fas fa-edit"></i></button>
+                            <button onclick="window.deleteAngsuranLgsg('${a.id}', '${nama}', '${rumah}')" class="text-red-500 bg-red-50 hover:bg-red-100 p-1.5 rounded transition"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                        ` : ''}
+                    </tr>
+                `).join('');
+            }
+
+            document.getElementById('detail_angsuran_tbody').innerHTML = tbodyHtml;
+            document.getElementById('modal-detail-angsuran').classList.remove('hidden');
+        };
+
+        window.editAngsuranLgsg = async function(id) {
+            document.getElementById('modal-detail-angsuran').classList.add('hidden'); // Tutup modal detail sementara
+            await window.editAngsuran(id); // Buka modal form edit
+        };
+
+        window.deleteAngsuranLgsg = function(id, nama, rumah) {
+            window.showConfirmModal("Hapus Riwayat", "Hapus catatan pembayaran ini?", () => {
+                window.fetchApp('deleteAngsuran', { id: String(id) }).then(res => {
+                    if (res.success) { 
+                        window.showToast("Data dihapus!", "success"); 
+                        window.viewRiwayatAngsuranWarga(nama, rumah); // Muat ulang modal detail
+                        window.renderAngsuran('laporan'); // Muat ulang layar belakang (Laporan)
+                        setTimeout(() => document.getElementById('modal-detail-angsuran').classList.remove('hidden'), 100);
+                    }
+                });
+            });
+        };
+
+        // ==========================================
+        // FUNGSI INVENTARIS RT
+        // ==========================================
+        // FUNGSI KEUANGAN / KAS RT
         // ==========================================
         window.renderInventaris = async function() {
             document.getElementById('page-title').innerText = "Inventaris RT";
@@ -3015,6 +3698,167 @@
         window.deletePeraturan = function(id) {
             window.showConfirmModal("Hapus Peraturan", "Yakin ingin menghapus poin peraturan ini dari daftar tata tertib?", () => {
                 window.fetchApp('deletePeraturan', { id: String(id) }).then(res => { if (res.success) { window.showToast("Peraturan dihapus!", "success"); window.loadMenu('peraturan'); } });
+            });
+        };
+
+        // ==========================================
+        // RENDERER: KEPUTUSAN RT
+        // ==========================================
+        window.renderKeputusan = async function() {
+            document.getElementById('page-title').innerText = "Keputusan RT";
+            const res = await window.fetchApp('getKeputusan');
+            let data = res.data || [];
+            
+            // Urutkan berdasarkan tanggal terbaru
+            data.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+            window.keputusanList = data;
+
+            let html = `
+                <div class="fade-in font-sans max-w-4xl mx-auto">
+                    <div class="bg-gradient-to-br from-teal-700 to-emerald-800 rounded-2xl p-6 md:p-8 text-white shadow-lg mb-6 relative overflow-hidden">
+                        <div class="absolute -right-10 -top-10 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl"></div>
+                        <div class="relative z-10">
+                            <h2 class="text-2xl md:text-3xl font-black mb-2 flex items-center"><i class="fas fa-file-signature mr-3 opacity-90"></i>Surat Keputusan RT</h2>
+                            <p class="text-teal-100 text-sm md:text-base opacity-90 max-w-2xl leading-relaxed">Arsip ketetapan dan keputusan resmi yang dikeluarkan oleh pengurus RT demi kelancaran administrasi dan program lingkungan.</p>
+                        </div>
+                    </div>
+
+                    ${currentUser.role === 'admin' ? `
+                    <div class="flex justify-end mb-6">
+                        <button onclick="window.openModalKeputusan()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl shadow-md font-bold transition flex items-center"><i class="fas fa-plus mr-2"></i>Buat Keputusan Baru</button>
+                    </div>
+                    ` : ''}
+
+                    <div class="space-y-4">
+                        ${data.length === 0 ? '<div class="bg-white p-8 text-center text-gray-500 rounded-xl border border-gray-200">Belum ada Surat Keputusan yang diarsipkan.</div>' : 
+                        data.map((kp) => `
+                            <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100 relative group hover:shadow-md transition-shadow">
+                                <div class="flex flex-col md:flex-row justify-between items-start gap-4 border-b border-gray-100 pb-4 mb-4">
+                                    <div>
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <span class="bg-teal-50 text-teal-700 border border-teal-200 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider"><i class="fas fa-hashtag mr-1"></i>${kp.nomor}</span>
+                                            <span class="text-xs text-gray-500 font-medium"><i class="far fa-calendar-alt mr-1"></i>${kp.tanggal}</span>
+                                        </div>
+                                        <h4 class="font-bold text-lg text-gray-800 leading-tight group-hover:text-teal-600 transition-colors">${kp.judul}</h4>
+                                    </div>
+                                    ${currentUser.role === 'admin' ? `
+                                    <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onclick="window.editKeputusan('${kp.id}')" class="text-blue-500 bg-blue-50 hover:bg-blue-100 p-2 rounded-lg text-xs font-bold transition"><i class="fas fa-edit"></i></button>
+                                        <button onclick="window.deleteKeputusan('${kp.id}')" class="text-red-500 bg-red-50 hover:bg-red-100 p-2 rounded-lg text-xs font-bold transition"><i class="fas fa-trash-alt"></i></button>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                
+                                <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap pl-2 border-l-4 border-gray-200 mb-4">${kp.isi}</div>
+                                
+                                <div class="flex justify-end mt-2">
+                                    <div class="text-right">
+                                        <p class="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">Ditetapkan Oleh:</p>
+                                        <p class="text-sm font-semibold text-gray-800"><i class="fas fa-pen-nib text-teal-500 mr-1.5"></i>${kp.penandatangan || 'Pengurus RT'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                ${currentUser.role === 'admin' ? `
+                <div id="modal-keputusan" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[99999] flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div class="flex justify-between items-center p-5 border-b bg-gray-50">
+                            <h3 class="text-lg font-bold text-gray-800" id="form_title_keputusan">Form Keputusan RT</h3>
+                            <button onclick="document.getElementById('modal-keputusan').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                        </div>
+                        <div class="p-6 overflow-y-auto custom-scrollbar">
+                            <form onsubmit="window.submitKeputusan(event)" class="space-y-4">
+                                <input type="hidden" id="kp_id">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Nomor Surat / SK</label>
+                                        <input type="text" id="kp_nomor" required placeholder="Cth: 01/KEP-RT/VIII/2026" class="w-full p-3 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Tanggal Penetapan</label>
+                                        <input type="date" id="kp_tanggal" required class="w-full p-3 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Judul Keputusan</label>
+                                    <input type="text" id="kp_judul" required placeholder="Cth: Pembentukan Panitia HUT RI" class="w-full p-3 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none font-semibold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Isi / Detail Keputusan</label>
+                                    <textarea id="kp_isi" required rows="5" placeholder="Tuliskan poin-poin keputusan secara rinci..." class="w-full p-3 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-600 mb-1 uppercase">Nama Penandatangan</label>
+                                    <input type="text" id="kp_penandatangan" required placeholder="Cth: Bapak Ketua RT" class="w-full p-3 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none">
+                                </div>
+                                <div class="pt-5 mt-2 flex justify-end gap-3 border-t border-gray-100">
+                                    <button type="button" onclick="document.getElementById('modal-keputusan').classList.add('hidden')" class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition">Batal</button>
+                                    <button type="submit" id="btn-save-keputusan" class="flex-1 px-5 py-2.5 text-sm font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-xl shadow-md transition">Simpan Keputusan</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>` : ''}
+            `;
+            document.getElementById('content-area').innerHTML = html;
+        };
+
+        window.openModalKeputusan = function() {
+            document.getElementById('kp_id').value = '';
+            document.getElementById('kp_nomor').value = '';
+            document.getElementById('kp_tanggal').value = new Date().toISOString().split('T')[0];
+            document.getElementById('kp_judul').value = '';
+            document.getElementById('kp_isi').value = '';
+            document.getElementById('kp_penandatangan').value = currentUser.nama || 'Ketua RT';
+            
+            document.getElementById('form_title_keputusan').innerHTML = '<i class="fas fa-plus-circle text-teal-500 mr-2"></i>Buat Keputusan Baru';
+            document.getElementById('btn-save-keputusan').innerText = "Simpan Keputusan";
+            document.getElementById('modal-keputusan').classList.remove('hidden');
+        };
+
+        window.editKeputusan = function(id) {
+            const item = window.keputusanList.find(x => String(x.id) === String(id));
+            if(!item) return;
+            
+            document.getElementById('kp_id').value = item.id;
+            document.getElementById('kp_nomor').value = item.nomor || '';
+            document.getElementById('kp_tanggal').value = item.tanggal || '';
+            document.getElementById('kp_judul').value = item.judul;
+            document.getElementById('kp_isi').value = item.isi;
+            document.getElementById('kp_penandatangan').value = item.penandatangan || '';
+            
+            document.getElementById('form_title_keputusan').innerHTML = '<i class="fas fa-edit text-teal-500 mr-2"></i>Edit Keputusan';
+            document.getElementById('btn-save-keputusan').innerText = "Simpan Perubahan";
+            document.getElementById('modal-keputusan').classList.remove('hidden');
+        };
+
+        window.submitKeputusan = async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-keputusan');
+            const originalText = btn.innerText;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...'; 
+            btn.disabled = true;
+
+            const id = document.getElementById('kp_id').value;
+            const payload = { 
+                nomor: document.getElementById('kp_nomor').value, 
+                tanggal: document.getElementById('kp_tanggal').value, 
+                judul: document.getElementById('kp_judul').value, 
+                isi: document.getElementById('kp_isi').value,
+                penandatangan: document.getElementById('kp_penandatangan').value
+            };
+
+            const res = await window.fetchApp(id ? 'updateKeputusan' : 'addKeputusan', { id: id, data: payload });
+            if (res.success) { window.showToast(id ? "Keputusan diperbarui!" : "Keputusan ditambahkan!", "success"); window.loadMenu('keputusan'); } 
+            else { window.showToast(res.message, 'error'); btn.innerText = originalText; btn.disabled = false; }
+        };
+
+        window.deleteKeputusan = function(id) {
+            window.showConfirmModal("Hapus Keputusan", "Yakin ingin menghapus arsip Keputusan RT ini?", () => {
+                window.fetchApp('deleteKeputusan', { id: String(id) }).then(res => { if (res.success) { window.showToast("Keputusan dihapus!", "success"); window.loadMenu('keputusan'); } });
             });
         };
 
