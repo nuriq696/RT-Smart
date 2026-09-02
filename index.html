@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#1e3a8a">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="RT 02 Smart">
+    <meta name="apple-mobile-web-app-title" content="RT Smart">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1wKyoV-zibsYTg0ceIBZlVkZnA9ZkuJnE">
     <link rel="manifest" id="manifest-link">
@@ -2265,17 +2265,34 @@
                 return;
             }
 
+            if (!window.currentPinjamanMonth) {
+                window.currentPinjamanMonth = new Date().toISOString().substring(0, 7);
+            }
+            const selectedMonthPj = window.currentPinjamanMonth;
+
             const summaryMap = {};
             let totalGlobalPinjam = 0;
             let totalGlobalAngsur = 0;
+            let uangMasukBulanIni = 0;
+            let uangKeluarBulanIni = 0;
+
             data.forEach(item => {
                 const val = Number(item.nominal);
                 const key = item.namaPeminjam + "|" + item.noRumah;
                 
                 if (!summaryMap[key]) summaryMap[key] = { nama: item.namaPeminjam, noRumah: item.noRumah, keyIndex: key, totalPinjam: 0, totalAngsur: 0, riwayat: [] };
                 summaryMap[key].riwayat.push(item);
-                if (item.jenis === 'Pinjaman') { summaryMap[key].totalPinjam += val; totalGlobalPinjam += val; } 
-                else if (item.jenis === 'Angsuran') { summaryMap[key].totalAngsur += val; totalGlobalAngsur += val; }
+                
+                if (item.jenis === 'Pinjaman') { 
+                    summaryMap[key].totalPinjam += val; 
+                    totalGlobalPinjam += val; 
+                    if (item.tanggal.substring(0, 7) === selectedMonthPj) uangKeluarBulanIni += val;
+                } 
+                else if (item.jenis === 'Angsuran') { 
+                    summaryMap[key].totalAngsur += val; 
+                    totalGlobalAngsur += val; 
+                    if (item.tanggal.substring(0, 7) === selectedMonthPj) uangMasukBulanIni += val;
+                }
             });
 
             const summaryArray = Object.values(summaryMap).map(s => {
@@ -2294,6 +2311,34 @@
                     <div class="bg-gradient-to-br from-amber-600 to-orange-700 rounded-2xl shadow-xl overflow-hidden mb-6 relative">
                         <div class="p-6 md:p-8 text-center relative z-10"><p class="text-orange-100 text-sm font-bold uppercase tracking-widest mb-3">Total Piutang Berjalan</p><h2 class="text-4xl md:text-5xl font-black text-white">${window.formatRp(globalSisa)}</h2></div>
                     </div>
+
+                    <!-- LAPORAN BULANAN UANG MASUK & KELUAR -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 border-b border-gray-100 pb-4">
+                            <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-calendar-alt text-amber-500 mr-2"></i>Laporan Bulanan Kas Pinjaman</h3>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-bold text-gray-500">Pilih Bulan:</span>
+                                <input type="month" value="${selectedMonthPj}" onchange="window.currentPinjamanMonth = this.value; window.renderPinjaman()" class="p-2 border border-gray-200 rounded-lg text-sm font-bold text-indigo-700 bg-gray-50 shadow-sm focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl p-4 flex items-center justify-between shadow-sm">
+                                <div>
+                                    <p class="text-emerald-700 text-[10px] font-bold uppercase tracking-wider mb-0.5">Uang Masuk (Angsuran)</p>
+                                    <h3 class="text-xl font-black text-emerald-600">+${window.formatRp(uangMasukBulanIni)}</h3>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-emerald-200 text-emerald-600 flex items-center justify-center text-lg shadow-inner"><i class="fas fa-arrow-down"></i></div>
+                            </div>
+                            <div class="bg-gradient-to-br from-rose-50 to-red-50 border border-rose-100 rounded-xl p-4 flex items-center justify-between shadow-sm">
+                                <div>
+                                    <p class="text-rose-700 text-[10px] font-bold uppercase tracking-wider mb-0.5">Uang Keluar (Pinjaman)</p>
+                                    <h3 class="text-xl font-black text-rose-600">-${window.formatRp(uangKeluarBulanIni)}</h3>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-rose-200 text-rose-600 flex items-center justify-center text-lg shadow-inner"><i class="fas fa-arrow-up"></i></div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         <div class="p-5 border-b bg-gray-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <h3 class="text-lg font-bold text-gray-800 whitespace-nowrap"><i class="fas fa-users text-indigo-500 mr-2"></i>Daftar Peminjam</h3>
