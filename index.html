@@ -2666,7 +2666,7 @@
         // FUNGSI ANGSURAN WARGA
         // ==========================================
         window.renderAngsuran = async function(mode = 'laporan') {
-            document.getElementById('page-title').innerText = "Laporan Angsuran / Iuran Warga";
+            document.getElementById('page-title').innerText = currentUser.role === 'admin' ? "Laporan Angsuran / Iuran Warga" : "Tagihan & Riwayat Iuran Saya";
             
             // Set default month ke bulan ini (Contoh: "2026-08") jika belum ada
             if (!window.currentAngsuranMonth) {
@@ -2676,17 +2676,94 @@
 
             const res = await window.fetchApp('getAngsuran');
             const data = res.data || [];
-            
+
+            // ==========================================
+            // TAMPILAN KHUSUS WARGA (Eksklusif Pribadi)
+            // ==========================================
+            if (currentUser.role === 'warga') {
+                // Saring data HANYA milik user yang sedang login
+                const myData = data.filter(a => a.noRumah === currentUser.noRumah || a.namaWarga === currentUser.nama);
+                const thisMonthData = myData.filter(a => a.tanggal.substring(0, 7) === selectedMonth);
+                
+                const totalThisMonth = thisMonthData.reduce((sum, a) => sum + Number(a.nominal), 0);
+                const isLunasThisMonth = totalThisMonth >= 30000;
+                const totalAllTime = myData.reduce((sum, a) => sum + Number(a.nominal), 0);
+                
+                const dt = new Date(selectedMonth + "-01");
+                const namaBulan = dt.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+
+                let htmlWarga = `
+                    <div class="fade-in font-sans">
+                        <!-- Profil Singkat & Pilihan Bulan -->
+                        <div class="bg-white border border-gray-100 rounded-2xl p-5 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center text-2xl font-bold shadow-md">${currentUser.nama.charAt(0).toUpperCase()}</div>
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-800">${currentUser.nama}</h3>
+                                    <p class="text-sm font-bold text-indigo-600"><i class="fas fa-home mr-1"></i> Blok Rumah: ${currentUser.noRumah || '-'}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-200 shadow-sm">
+                                <span class="text-sm font-bold text-gray-500 pl-2">Bulan:</span>
+                                <input type="month" value="${selectedMonth}" onchange="window.currentAngsuranMonth = this.value; window.renderAngsuran()" class="p-2 bg-white border border-gray-200 rounded-lg text-sm font-bold text-indigo-700 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                            </div>
+                        </div>
+
+                        <!-- Kartu Status -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+                            <div class="bg-gradient-to-br ${isLunasThisMonth ? 'from-emerald-500 to-teal-600' : 'from-rose-500 to-red-600'} rounded-2xl p-6 text-white flex justify-between items-center shadow-md">
+                                <div>
+                                    <p class="text-white/90 text-xs font-bold uppercase tracking-wider mb-1">Status Iuran ${namaBulan}</p>
+                                    <h3 class="text-3xl font-black">${isLunasThisMonth ? '<i class="fas fa-check-circle mr-2"></i> LUNAS' : '<i class="fas fa-times-circle mr-2"></i> BELUM BAYAR'}</h3>
+                                </div>
+                                <div class="text-5xl opacity-20"><i class="fas fa-calendar-check"></i></div>
+                            </div>
+                            <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white flex justify-between items-center shadow-md">
+                                <div>
+                                    <p class="text-blue-200 text-xs font-bold uppercase tracking-wider mb-1">Total Terbayar Keseluruhan</p>
+                                    <h3 class="text-3xl font-black">${window.formatRp(totalAllTime)}</h3>
+                                </div>
+                                <div class="text-5xl opacity-20"><i class="fas fa-wallet"></i></div>
+                            </div>
+                        </div>
+
+                        <!-- Tabel Riwayat -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div class="p-5 border-b border-gray-100 bg-gray-50/50">
+                                <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-history text-indigo-500 mr-2"></i>Riwayat Pembayaran Saya</h3>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                                        <tr><th class="p-4 border-b font-semibold w-40">Tanggal</th><th class="p-4 border-b font-semibold">Keterangan</th><th class="p-4 border-b font-semibold text-right">Nominal</th></tr>
+                                    </thead>
+                                    <tbody class="text-sm divide-y divide-gray-100 bg-white">
+                                        ${myData.length === 0 ? '<tr><td colspan="3" class="p-8 text-center text-gray-500 italic">Belum ada riwayat pembayaran yang tercatat.</td></tr>' : 
+                                        myData.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal)).map(a => `
+                                            <tr class="hover:bg-gray-50 transition-colors">
+                                                <td class="p-4 text-gray-600 whitespace-nowrap"><i class="far fa-calendar-alt mr-2 text-indigo-400"></i>${a.tanggal}</td>
+                                                <td class="p-4 font-bold text-gray-800">${a.keterangan || '-'}</td>
+                                                <td class="p-4 text-right font-black text-emerald-600 whitespace-nowrap">${window.formatRp(a.nominal)}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('content-area').innerHTML = htmlWarga;
+                return; // MENGHENTIKAN PROSES DI SINI, AGAR TABEL ADMIN TIDAK DIMUAT
+            }
+
+            // ==========================================
+            // TAMPILAN KHUSUS ADMIN
+            // ==========================================
             // Ambil data warga untuk disaring
             const resWarga = await window.fetchApp('getWarga');
             const wargaList = resWarga.data || [];
             window.kepalaKeluargaList = wargaList.filter(w => w.statusKeluarga === 'Kepala Keluarga');
             
-            // Proteksi privasi warga: jika login sebagai warga, hanya tampilkan tagihan rumahnya sendiri
-            if (currentUser.role === 'warga') {
-                window.kepalaKeluargaList = window.kepalaKeluargaList.filter(w => w.noRumah === currentUser.noRumah);
-            }
-
             let html = '<div class="fade-in font-sans">';
 
             if (mode === 'laporan') {
