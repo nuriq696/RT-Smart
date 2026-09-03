@@ -437,7 +437,7 @@
                                 break;
                             case 'getPengumuman': res.data = dbPengumuman; break;
                             case 'addPengumuman': dbPengumuman.push(payload.data); break;
-                            case 'getSurat': res.data = currentUser.role === 'warga' ? dbSurat.filter(s => s.noRumah === currentUser.noRumah) : dbSurat; break;
+                            case 'getSurat': res.data = currentUser.role === 'warga' ? dbSurat.filter(s => s.pemohon === currentUser.nama) : dbSurat; break;
                             case 'addSurat': dbSurat.push(payload.data); break;
                             case 'updateSuratStatus':
                                 const surat = dbSurat.find(s => s.id === payload.id);
@@ -528,7 +528,7 @@
                                 if (userToUpdate) { if(payload.username) userToUpdate.username = payload.username; if(payload.password) userToUpdate.password = payload.password; }
                                 currentUser.username = payload.username || currentUser.username; currentUser.password = payload.password || currentUser.password;
                                 break;
-                            case 'getAngsuran': res.data = currentUser.role === 'warga' ? dbAngsuran.filter(a => a.noRumah === currentUser.noRumah) : dbAngsuran; break;
+                            case 'getAngsuran': res.data = currentUser.role === 'warga' ? dbAngsuran.filter(a => a.namaWarga === currentUser.nama) : dbAngsuran; break;
                             case 'addAngsuran': payload.data.id = 'ANG' + Date.now(); dbAngsuran.push(payload.data); break;
                             case 'updateAngsuran': const angIdx = dbAngsuran.findIndex(x => String(x.id) === String(payload.id)); if(angIdx !== -1) dbAngsuran[angIdx] = { ...dbAngsuran[angIdx], ...payload.data }; break;
                             case 'deleteAngsuran': dbAngsuran = dbAngsuran.filter(x => String(x.id) !== String(payload.id)); break;
@@ -585,7 +585,7 @@
                         case 'deleteKeuangan': await db.collection('Keuangan').doc(payload.id).delete(); break;
                         case 'getPengumuman': res.data = await getCol('Pengumuman'); break;
                         case 'addPengumuman': payload.data.id = payload.data.id || 'P' + Date.now(); await db.collection('Pengumuman').doc(payload.data.id).set(payload.data); break;
-                        case 'getSurat': const suratAll = await getCol('Surat'); res.data = currentUser.role === 'warga' ? suratAll.filter(s => s.noRumah === currentUser.noRumah) : suratAll; break;
+                        case 'getSurat': const suratAll = await getCol('Surat'); res.data = currentUser.role === 'warga' ? suratAll.filter(s => s.pemohon === currentUser.nama) : suratAll; break;
                         case 'addSurat': payload.data.id = payload.data.id || 'S' + Date.now(); await db.collection('Surat').doc(payload.data.id).set(payload.data); break;
                         case 'updateSuratStatus': await db.collection('Surat').doc(payload.id).update({ status: payload.status }); break;
                         case 'getPinjaman': res.data = await getCol('Pinjaman'); break;
@@ -638,7 +638,7 @@
                             await db.collection('Users').doc(payload.id).update(updateObj);
                             currentUser.username = payload.username || currentUser.username; currentUser.password = payload.password || currentUser.password;
                             break;
-                        case 'getAngsuran': const angAll = await getCol('Angsuran'); res.data = currentUser.role === 'warga' ? angAll.filter(a => a.noRumah === currentUser.noRumah) : angAll; break;
+                        case 'getAngsuran': const angAll = await getCol('Angsuran'); res.data = currentUser.role === 'warga' ? angAll.filter(a => a.namaWarga === currentUser.nama) : angAll; break;
                         case 'addAngsuran': payload.data.id = 'ANG' + Date.now(); await db.collection('Angsuran').doc(payload.data.id).set(payload.data); break;
                         case 'updateAngsuran': await db.collection('Angsuran').doc(payload.id).update(payload.data); break;
                         case 'deleteAngsuran': await db.collection('Angsuran').doc(payload.id).delete(); break;
@@ -2678,11 +2678,11 @@
             const data = res.data || [];
 
             // ==========================================
-            // TAMPILAN KHUSUS WARGA (Eksklusif Pribadi)
+            // LOGIKA 1: TAMPILAN KHUSUS WARGA 
             // ==========================================
             if (currentUser.role === 'warga') {
-                // Saring data HANYA milik user yang sedang login
-                const myData = data.filter(a => a.noRumah === currentUser.noRumah || a.namaWarga === currentUser.nama);
+                // Saring data HANYA milik warga yang sedang login secara KETAT berdasarkan NAMA LENGKAP
+                const myData = data.filter(a => a.namaWarga === currentUser.nama);
                 const thisMonthData = myData.filter(a => a.tanggal.substring(0, 7) === selectedMonth);
                 
                 const totalThisMonth = thisMonthData.reduce((sum, a) => sum + Number(a.nominal), 0);
