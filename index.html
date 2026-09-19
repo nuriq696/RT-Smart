@@ -692,7 +692,7 @@
                 menus = [
                     { id: 'dashboard', icon: 'fa-chart-pie', text: 'Dashboard Utama' },
                     { id: 'warga', icon: 'fa-users', text: 'Data Warga' },
-                    { id: 'angsuran', icon: 'fa-money-check-alt', text: 'Angsuran Warga' },
+                    { id: 'angsuran', icon: 'fa-money-check-alt', text: 'Iuran Warga' },
                     { id: 'keuangan', icon: 'fa-wallet', text: 'Kas RT' },
                     { id: 'pinjaman', icon: 'fa-hand-holding-usd', text: 'Pinjaman Warga' },
                     { id: 'notulen', icon: 'fa-book-open', text: 'Notulen Rapat' },
@@ -706,7 +706,7 @@
             } else {
                 menus = [
                     { id: 'beranda', icon: 'fa-home', text: 'Beranda' },
-                    { id: 'angsuran', icon: 'fa-money-check-alt', text: 'Angsuran Warga' },
+                    { id: 'angsuran', icon: 'fa-money-check-alt', text: 'Iuran Warga' },
                     { id: 'keuangan', icon: 'fa-file-invoice-dollar', text: 'Laporan Kas' },
                     { id: 'pinjaman', icon: 'fa-hand-holding-usd', text: 'Pinjaman Warga' },
                     { id: 'notulen', icon: 'fa-book-open', text: 'Notulen Rapat' },
@@ -2666,7 +2666,7 @@
         // FUNGSI ANGSURAN WARGA
         // ==========================================
         window.renderAngsuran = async function(mode = 'laporan') {
-            document.getElementById('page-title').innerText = currentUser.role === 'admin' ? "Laporan Angsuran / Iuran Warga" : "Tagihan & Riwayat Iuran Saya";
+            document.getElementById('page-title').innerText = currentUser.role === 'admin' ? "Laporan Iuran Warga" : "Tagihan & Riwayat Iuran Saya";
             
             // Set default month ke bulan ini (Contoh: "2026-08") jika belum ada
             if (!window.currentAngsuranMonth) {
